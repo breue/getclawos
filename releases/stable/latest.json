@@ -1,0 +1,13 @@
+{
+  "version": "v0.0.0",
+  "tarball": {
+    "file": "clawos-v0.0.0.tar.gz",
+    "url": "https://github.com/your-org/clawos/releases/download/v0.0.0/clawos-v0.0.0.tar.gz",
+    "sha256": "replace-with-real-sha256"
+  },
+  "macos": {
+    "dmg_file": "ClawOS-v0.0.0.dmg",
+    "dmg_url": "https://github.com/your-org/clawos/releases/download/v0.0.0/ClawOS-v0.0.0.dmg",
+    "dmg_sha256": "replace-with-real-sha256"
+  }
+}

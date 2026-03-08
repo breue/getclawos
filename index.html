@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClawOS</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f7fb;
+        --fg: #111827;
+        --muted: #4b5563;
+        --panel: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b1020;
+          --fg: #e5e7eb;
+          --muted: #9ca3af;
+          --panel: #121a31;
+        }
+      }
+      body {
+        margin: 0;
+        font-family: "Manrope", "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #6aa0ff22, transparent 50%), var(--bg);
+        color: var(--fg);
+      }
+      .wrap {
+        max-width: 880px;
+        margin: 40px auto;
+        padding: 24px;
+      }
+      .card {
+        background: var(--panel);
+        border-radius: 14px;
+        padding: 24px;
+        box-shadow: 0 10px 28px #0000001a;
+      }
+      h1 { margin: 0 0 8px; font-size: 2rem; }
+      p { color: var(--muted); line-height: 1.5; }
+      pre {
+        background: #00000014;
+        border-radius: 10px;
+        padding: 12px;
+        overflow-x: auto;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      .btn {
+        text-decoration: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: #1f6feb;
+        color: #fff;
+        font-weight: 600;
+      }
+      .btn.secondary {
+        background: #374151;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <h1>Install ClawOS</h1>
+        <p>Local-first supervisor orchestration on top of OpenClaw, with one-click macOS setup and one-line CLI install.</p>
+        <pre><code>curl -fsSL https://getclawos.com/install.sh | bash</code></pre>
+        <div class="actions">
+          <a class="btn" href="https://github.com/breue/getclawos/releases/latest">Download macOS App</a>
+          <a class="btn secondary" href="https://github.com/breue/getclawos">GitHub Repository</a>
+        </div>
+        <p>For latest stable artifacts, this page uses <code>/releases/stable/latest.env</code>.</p>
+      </section>
+    </main>
+  </body>
+  </html>
