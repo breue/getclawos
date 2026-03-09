@@ -274,9 +274,10 @@
           Local-first orchestration on top of OpenClaw. Start with one command or grab a signed DMG.
         </p>
         <div class="actions">
-          <a class="btn primary" href="https://github.com/breue/getclawos/releases/latest">Download macOS DMG</a>
+          <a class="btn primary" id="download-btn" href="https://github.com/breue/getclawos/releases/latest">Download macOS DMG</a>
           <a class="btn ghost" href="#install">CLI Install</a>
         </div>
+        <p class="status" id="download-status"></p>
         <section id="install" class="command" aria-label="Install command">
           <div class="command-head">
             <p class="command-title">Terminal</p>
@@ -304,16 +305,45 @@
     <script>
       (function () {
         var button = document.getElementById("copy-btn");
+        var downloadButton = document.getElementById("download-btn");
+        var downloadStatus = document.getElementById("download-status");
         var command = document.getElementById("install-command");
-        if (!button || !command || !navigator.clipboard) return;
-        button.addEventListener("click", function () {
-          navigator.clipboard.writeText(command.textContent || "").then(function () {
-            button.textContent = "Copied";
-            setTimeout(function () {
-              button.textContent = "Copy command";
-            }, 1200);
+        if (button && command && navigator.clipboard) {
+          button.addEventListener("click", function () {
+            navigator.clipboard.writeText(command.textContent || "").then(function () {
+              button.textContent = "Copied";
+              setTimeout(function () {
+                button.textContent = "Copy command";
+              }, 1200);
+            });
           });
-        });
+        }
+
+        if (downloadButton) {
+          var href = downloadButton.getAttribute("href") || "";
+          var repoMatch = href.match(/github\.com\/([^/]+\/[^/]+)\/releases/i);
+          var repo = repoMatch ? repoMatch[1] : "breue/getclawos";
+
+          fetch("https://api.github.com/repos/" + repo + "/releases/latest", {
+            headers: { Accept: "application/vnd.github+json" }
+          })
+            .then(function (response) {
+              if (!response.ok) throw new Error("No release yet");
+              return response.json();
+            })
+            .then(function (release) {
+              if (!release || !release.html_url) throw new Error("No release url");
+              downloadButton.setAttribute("href", release.html_url);
+              if (downloadStatus) downloadStatus.textContent = "Latest release: " + release.tag_name;
+            })
+            .catch(function () {
+              downloadButton.setAttribute("href", "#install");
+              downloadButton.textContent = "Use CLI Install";
+              if (downloadStatus) {
+                downloadStatus.textContent = "No DMG release published yet. Use the install command below.";
+              }
+            });
+        }
       })();
     </script>
   </body>
