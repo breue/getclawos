@@ -4,78 +4,317 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ClawOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
       :root {
-        color-scheme: light dark;
-        --bg: #f5f7fb;
-        --fg: #111827;
-        --muted: #4b5563;
-        --panel: #ffffff;
+        --bg: #f3efe5;
+        --ink: #1b1a17;
+        --muted: #5a5447;
+        --panel: #fffef8;
+        --stroke: #dccfb6;
+        --accent: #d65a2f;
+        --accent-ink: #fff9f3;
+        --teal: #1f7676;
       }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0b1020;
-          --fg: #e5e7eb;
-          --muted: #9ca3af;
-          --panel: #121a31;
-        }
+
+      * {
+        box-sizing: border-box;
       }
+
       body {
         margin: 0;
-        font-family: "Manrope", "Segoe UI", sans-serif;
-        background: radial-gradient(circle at top, #6aa0ff22, transparent 50%), var(--bg);
-        color: var(--fg);
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(60vw 60vw at 15% 0%, #f7c8b633 0%, transparent 58%),
+          radial-gradient(45vw 45vw at 90% 10%, #8ec8c845 0%, transparent 60%),
+          linear-gradient(180deg, #faf6ec 0%, var(--bg) 60%);
       }
+
+      .grain {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image: radial-gradient(#00000008 0.5px, transparent 0.5px);
+        background-size: 4px 4px;
+        opacity: 0.35;
+      }
+
       .wrap {
-        max-width: 880px;
-        margin: 40px auto;
-        padding: 24px;
+        width: min(980px, calc(100% - 40px));
+        margin: 48px auto 64px;
       }
+
+      .hero {
+        background: linear-gradient(135deg, #fffdf8 0%, #fff6ea 100%);
+        border: 1px solid var(--stroke);
+        border-radius: 26px;
+        padding: clamp(24px, 4vw, 44px);
+        box-shadow: 0 14px 45px #5a40200d;
+        animation: rise 520ms ease-out both;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 16px;
+        padding: 6px 10px;
+        border: 1px solid #d8c7aa;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #6b4a2e;
+        background: #fff4e2;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #3ca847;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        line-height: 1.03;
+        letter-spacing: -0.02em;
+      }
+
+      .sub {
+        margin: 16px 0 0;
+        max-width: 60ch;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .actions {
+        margin-top: 26px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        font-weight: 700;
+        padding: 12px 16px;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn.primary {
+        background: linear-gradient(180deg, #e86d42 0%, var(--accent) 100%);
+        color: var(--accent-ink);
+        box-shadow: 0 10px 20px #d65a2f33;
+      }
+
+      .btn.ghost {
+        border-color: #c8baa2;
+        background: #fffef8;
+        color: #6a5340;
+      }
+
+      .command {
+        margin-top: 26px;
+        background: #191817;
+        color: #ece7dd;
+        border-radius: 14px;
+        border: 1px solid #2b2824;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px #ffffff0d;
+      }
+
+      .command-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid #2c2926;
+        background: #151311;
+      }
+
+      .command-title {
+        margin: 0;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #c8bda8;
+      }
+
+      .copy {
+        border: 1px solid #3a362f;
+        background: #201d19;
+        color: #f2e8d9;
+        font-family: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+        font-size: 0.8rem;
+        border-radius: 8px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+
+      code {
+        margin: 0;
+        display: block;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+        font-size: 0.94rem;
+      }
+
+      .grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
       .card {
         background: var(--panel);
+        border: 1px solid var(--stroke);
         border-radius: 14px;
-        padding: 24px;
-        box-shadow: 0 10px 28px #0000001a;
+        padding: 14px;
+        animation: rise 520ms ease-out both;
       }
-      h1 { margin: 0 0 8px; font-size: 2rem; }
-      p { color: var(--muted); line-height: 1.5; }
-      pre {
-        background: #00000014;
-        border-radius: 10px;
-        padding: 12px;
-        overflow-x: auto;
+
+      .card:nth-child(1) { animation-delay: 70ms; }
+      .card:nth-child(2) { animation-delay: 120ms; }
+      .card:nth-child(3) { animation-delay: 170ms; }
+
+      .card h2 {
+        margin: 0;
+        font-size: 1rem;
+        color: #2f2a23;
       }
-      .actions {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 20px;
+
+      .card p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.45;
+        font-size: 0.94rem;
       }
-      .btn {
-        text-decoration: none;
-        padding: 10px 14px;
-        border-radius: 10px;
-        background: #1f6feb;
-        color: #fff;
-        font-weight: 600;
+
+      .status {
+        margin-top: 18px;
+        color: #4f473b;
+        font-size: 0.9rem;
       }
-      .btn.secondary {
-        background: #374151;
+
+      .status code {
+        display: inline;
+        padding: 1px 4px;
+        border-radius: 5px;
+        background: #efe4cf;
+        color: #564028;
+        font-family: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .wrap {
+          width: calc(100% - 28px);
+          margin: 28px auto 40px;
+        }
+
+        .hero {
+          border-radius: 18px;
+          padding: 20px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .command-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
       }
     </style>
   </head>
   <body>
+    <div class="grain" aria-hidden="true"></div>
     <main class="wrap">
-      <section class="card">
-        <h1>Install ClawOS</h1>
-        <p>Local-first supervisor orchestration on top of OpenClaw, with one-click macOS setup and one-line CLI install.</p>
-        <pre><code>curl -fsSL https://getclawos.com/install.sh | bash</code></pre>
+      <section class="hero">
+        <p class="eyebrow"><span class="dot"></span> Stable channel</p>
+        <h1>Install ClawOS on macOS in under a minute.</h1>
+        <p class="sub">
+          Local-first orchestration on top of OpenClaw. Start with one command or grab a signed DMG.
+        </p>
         <div class="actions">
-          <a class="btn" href="https://github.com/breue/getclawos/releases/latest">Download macOS App</a>
-          <a class="btn secondary" href="https://github.com/breue/getclawos">GitHub Repository</a>
+          <a class="btn primary" href="https://github.com/your-org/clawos/releases/latest">Download macOS DMG</a>
+          <a class="btn ghost" href="#install">CLI Install</a>
         </div>
-        <p>For latest stable artifacts, this page uses <code>/releases/stable/latest.env</code>.</p>
+        <section id="install" class="command" aria-label="Install command">
+          <div class="command-head">
+            <p class="command-title">Terminal</p>
+            <button class="copy" id="copy-btn" type="button">Copy command</button>
+          </div>
+          <code id="install-command">curl -fsSL https://getclawos.com/install.sh | bash</code>
+        </section>
+        <div class="grid">
+          <article class="card">
+            <h2>One-line install</h2>
+            <p>Bootstraps the latest stable release, verifies checksums, and starts local services.</p>
+          </article>
+          <article class="card">
+            <h2>Native app path</h2>
+            <p>Download a DMG for click-through setup on macOS with the same release channel.</p>
+          </article>
+          <article class="card">
+            <h2>Predictable updates</h2>
+            <p>Install data comes from <code>/releases/stable/latest.env</code> for deterministic rollout.</p>
+          </article>
+        </div>
+        <p class="status">Installer endpoint: <code>https://getclawos.com/install.sh</code></p>
       </section>
     </main>
+    <script>
+      (function () {
+        var button = document.getElementById("copy-btn");
+        var command = document.getElementById("install-command");
+        if (!button || !command || !navigator.clipboard) return;
+        button.addEventListener("click", function () {
+          navigator.clipboard.writeText(command.textContent || "").then(function () {
+            button.textContent = "Copied";
+            setTimeout(function () {
+              button.textContent = "Copy command";
+            }, 1200);
+          });
+        });
+      })();
+    </script>
   </body>
-  </html>
+</html>
