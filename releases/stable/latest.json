@@ -1,13 +1,13 @@
 {
-  "version": "v0.1.17",
+  "version": "v1.2.0",
   "tarball": {
-    "file": "clawos-v0.1.17.tar.gz",
-    "url": "https://github.com/breue/getclawos/releases/download/v0.1.17/clawos-v0.1.17.tar.gz",
-    "sha256": "c40081f66e5c9787dbc925a0de079190aecdc9be0e7e67dce234f35f32cf970e"
+    "file": "clawos-v1.2.0.tar.gz",
+    "url": "https://github.com/breue/getclawos/releases/download/v1.2.0/clawos-v1.2.0.tar.gz",
+    "sha256": "670fdd0c2e8e47ce6bcd828d3e5376e6ee978a3bbd2b46a3268ebaa904b5adba"
   },
   "macos": {
-    "dmg_file": "ClawOS-v0.1.17.dmg",
-    "dmg_url": "https://github.com/breue/getclawos/releases/download/v0.1.17/ClawOS-v0.1.17.dmg",
-    "dmg_sha256": "919dcafa1f38a9889646a55589684fe74359c94aaec2d48e0dca4a1dd09e62a1"
+    "dmg_file": "ClawOS-v1.2.0.dmg",
+    "dmg_url": "https://github.com/breue/getclawos/releases/download/v1.2.0/ClawOS-v1.2.0.dmg",
+    "dmg_sha256": "ff9ccb16151022bc9ef15e1e303e22ead33d53e625a0227a5eeb5804dc6c7bd3"
   }
 }
