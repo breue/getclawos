@@ -3,11 +3,11 @@
   "tarball": {
     "file": "clawos-v1.4.0.tar.gz",
     "url": "https://github.com/breue/getclawos/releases/download/v1.4.0/clawos-v1.4.0.tar.gz",
-    "sha256": "260c316a636ac87d20321a88b60875356157d8f7235dea67e0a0e9d3275c3b4b"
+    "sha256": "8205812e9c5a5da36340b031773a5df2cd4c65647b53b60eed1e7f924e0e9b4f"
   },
   "macos": {
     "dmg_file": "MarginMachines-v1.4.0.dmg",
     "dmg_url": "https://github.com/breue/getclawos/releases/download/v1.4.0/MarginMachines-v1.4.0.dmg",
-    "dmg_sha256": "3c8b64afc0859a6dd6d57a22173a272e80d9a38831228e1a05b3a2d0eed4ca8b"
+    "dmg_sha256": "ae17821dc12fd93b3b785b72d00574b00435083b26459d3ed67fb6bdbf773f9e"
   }
 }
