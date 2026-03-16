@@ -37,7 +37,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "ClawOS web installer"
+echo "Margin Machines installer"
 echo "Manifest: $MANIFEST_URL"
 
 MANIFEST_PATH="$WORK_DIR/latest.env"
@@ -55,7 +55,7 @@ if [ -z "${CLAWOS_TARBALL_URL:-}" ] || [ -z "${CLAWOS_TARBALL_SHA256:-}" ]; then
 fi
 
 TARBALL_PATH="$WORK_DIR/clawos.tar.gz"
-echo "Downloading ClawOS release bundle..."
+echo "Downloading Margin Machines release bundle..."
 curl -fsSL "$CLAWOS_TARBALL_URL" -o "$TARBALL_PATH"
 
 ACTUAL_SHA256="$(sha256_of_file "$TARBALL_PATH")"
@@ -92,11 +92,11 @@ if [ ! -x "./bin/clawos" ]; then
   chmod +x ./bin/clawos
 fi
 
-echo "Running ClawOS installer..."
+echo "Running Margin Machines installer..."
 ./bin/clawos install
 
 if [ "$AUTO_START" = "true" ]; then
-  echo "Starting ClawOS services..."
+  echo "Starting Margin Machines services..."
   nohup ./bin/clawos start >"${TMPDIR:-/tmp}/clawos-start.log" 2>&1 &
 fi
 
@@ -105,10 +105,10 @@ if [ "$AUTO_OPEN_DASHBOARD" = "true" ] && [ "$(uname -s)" = "Darwin" ] && comman
 fi
 
 echo
-echo "ClawOS installation complete."
+echo "Margin Machines installation complete."
 echo "Install dir:"
 echo "  $INSTALL_DIR"
 echo "Dashboard:"
 echo "  http://127.0.0.1:3000"
 echo "GUI setup app:"
-echo "  /Applications/ClawOS.app (or ~/Applications/ClawOS.app)"
+echo "  /Applications/MarginMachines.app (or ~/Applications/MarginMachines.app)"
