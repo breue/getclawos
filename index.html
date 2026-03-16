@@ -268,6 +268,7 @@
     <div class="grain" aria-hidden="true"></div>
     <main class="wrap">
       <section class="hero">
+        <img src="https://marginmachines.com/assets/logo-CBQU2g__.png" alt="Margin Machines" width="80" height="80" style="border-radius: 16px; margin-bottom: 16px;" />
         <p class="eyebrow"><span class="dot"></span> Stable channel</p>
         <h1>Install Margin Machines on macOS in under a minute.</h1>
         <p class="sub">
@@ -332,8 +333,14 @@
               return response.json();
             })
             .then(function (release) {
-              if (!release || !release.html_url) throw new Error("No release url");
-              downloadButton.setAttribute("href", release.html_url);
+              if (!release || !release.assets) throw new Error("No release");
+              var dmg = release.assets.find(function (a) { return a.name.endsWith(".dmg"); });
+              if (dmg) {
+                downloadButton.setAttribute("href", dmg.browser_download_url);
+                downloadButton.setAttribute("download", dmg.name);
+              } else {
+                downloadButton.setAttribute("href", release.html_url);
+              }
               if (downloadStatus) downloadStatus.textContent = "Latest release: " + release.tag_name;
             })
             .catch(function () {
