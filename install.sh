@@ -78,14 +78,27 @@ if [ -z "$EXTRACTED_ROOT" ]; then
 fi
 
 if [ -e "$INSTALL_DIR" ]; then
-  BACKUP_DIR="${INSTALL_DIR}.backup.$(date +%Y%m%d%H%M%S)"
-  echo "Existing install found. Backing up to:"
-  echo "  $BACKUP_DIR"
-  mv "$INSTALL_DIR" "$BACKUP_DIR"
+  echo "Existing install found. Upgrading code, preserving data..."
+  PRESERVE_DIR="$WORK_DIR/preserve"
+  mkdir -p "$PRESERVE_DIR"
+  # Preserve: database, env config, gems, and any user files
+  for item in storage .clawos.env .bundle vendor/bundle; do
+    if [ -e "$INSTALL_DIR/$item" ]; then
+      mkdir -p "$PRESERVE_DIR/$(dirname "$item")"
+      cp -a "$INSTALL_DIR/$item" "$PRESERVE_DIR/$item"
+    fi
+  done
+  rm -rf "$INSTALL_DIR"
 fi
 
 mkdir -p "$(dirname "$INSTALL_DIR")"
 mv "$EXTRACTED_ROOT" "$INSTALL_DIR"
+
+# Restore preserved data into new install
+if [ -d "${PRESERVE_DIR:-}" ]; then
+  echo "Restoring user data..."
+  cp -a "$PRESERVE_DIR"/. "$INSTALL_DIR/" 2>/dev/null || true
+fi
 
 cd "$INSTALL_DIR"
 if [ ! -x "./bin/clawos" ]; then
@@ -101,7 +114,7 @@ if [ "$AUTO_START" = "true" ]; then
 fi
 
 if [ "$AUTO_OPEN_DASHBOARD" = "true" ] && [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
-  open "http://127.0.0.1:3000" || true
+  open "http://127.0.0.1:3200" || true
 fi
 
 echo
@@ -109,6 +122,6 @@ echo "Margin Machines installation complete."
 echo "Install dir:"
 echo "  $INSTALL_DIR"
 echo "Dashboard:"
-echo "  http://127.0.0.1:3000"
+echo "  http://127.0.0.1:3200"
 echo "GUI setup app:"
 echo "  /Applications/MarginMachines.app (or ~/Applications/MarginMachines.app)"
