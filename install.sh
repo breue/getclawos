@@ -105,6 +105,19 @@ if [ ! -x "./bin/clawos" ]; then
   chmod +x ./bin/clawos
 fi
 
+# Ensure brew Ruby and Node are in PATH
+if [ -x /opt/homebrew/bin/brew ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+if [ -x /opt/homebrew/opt/ruby/bin/ruby ]; then
+  export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+  export GEM_HOME="$HOME/.gem/ruby/$(/opt/homebrew/opt/ruby/bin/ruby -e 'puts RUBY_VERSION' 2>/dev/null || echo '3.4.0')"
+  export PATH="$GEM_HOME/bin:$PATH"
+fi
+# Load NVM if available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null
+
 echo "Running Margin Machines installer..."
 ./bin/clawos install
 
