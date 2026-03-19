@@ -1,4 +1,4 @@
-# Website Deployment (getclawos.com)
+# Website Deployment (get.marginmachines.com)
 
 This directory is a static site bundle you can deploy to GitHub Pages, Cloudflare Pages, Netlify, or S3/CloudFront.
 
@@ -19,5 +19,5 @@ Prepare those files after building release assets:
 
 Then deploy the entire `website/` directory to your hosting provider and ensure:
 
-- `https://getclawos.com/install.sh` resolves to `website/install.sh`
-- `https://getclawos.com/releases/stable/latest.env` resolves to `website/releases/stable/latest.env`
+- `https://get.marginmachines.com/install.sh` resolves to `website/install.sh`
+- `https://get.marginmachines.com/releases/stable/latest.env` resolves to `website/releases/stable/latest.env`

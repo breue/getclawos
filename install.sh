@@ -27,7 +27,7 @@ require_cmd awk
 
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.clawos}"
 RELEASE_CHANNEL="${CLAWOS_RELEASE_CHANNEL:-stable}"
-MANIFEST_URL="${CLAWOS_MANIFEST_URL:-https://getclawos.com/releases/${RELEASE_CHANNEL}/latest.env}"
+MANIFEST_URL="${CLAWOS_MANIFEST_URL:-https://get.marginmachines.com/releases/${RELEASE_CHANNEL}/latest.env}"
 AUTO_START="${CLAWOS_AUTO_START:-true}"
 AUTO_OPEN_DASHBOARD="${CLAWOS_AUTO_OPEN_DASHBOARD:-true}"
 
