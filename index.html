@@ -6,237 +6,218 @@
     <title>Margin Machines — Your AI team, running locally.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <style>
       * { box-sizing: border-box; margin: 0; }
-      body { font-family: "Inter", "SF Pro Text", system-ui, sans-serif; background: #000; color: #f5f5f7; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-      h1, h2, h3 { font-family: "Manrope", "SF Pro Display", system-ui, sans-serif; letter-spacing: -0.02em; }
-      .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
-      ::selection { background: rgba(255,255,255,0.2); }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: "Inter", "Segoe UI", sans-serif;
+        color: #0f172a;
+        background: #ffffff;
+        background-image:
+          radial-gradient(at 0% 0%, rgba(0,88,190,0.06) 0, transparent 50%),
+          radial-gradient(at 100% 0%, rgba(99,102,241,0.04) 0, transparent 50%),
+          radial-gradient(at 50% 100%, rgba(16,185,129,0.03) 0, transparent 50%);
+        background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      h1, h2, h3 { font-family: "Manrope", sans-serif; letter-spacing: -0.025em; }
+      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+      @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
       /* Nav */
-      .nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(0,0,0,0.8); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-      .nav .inner { max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 1.5rem; height: 3rem; }
-      .nav .brand { font-family: "Manrope", sans-serif; font-size: 1.125rem; font-weight: 600; color: white; letter-spacing: -0.02em; }
-      .nav .brand span { color: rgba(255,255,255,0.4); }
-      .nav .links { display: flex; gap: 2rem; }
-      .nav .links a { font-size: 0.75rem; color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.2s; }
-      .nav .links a:hover { color: white; }
-
-      /* Sub-nav */
-      .subnav { position: sticky; top: 3rem; z-index: 90; background: rgba(0,0,0,0.72); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); }
-      .subnav .inner { max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 1.5rem; height: 3.5rem; }
-      .subnav .title { font-family: "Manrope", sans-serif; font-size: 1.3rem; font-weight: 600; color: rgba(255,255,255,0.9); letter-spacing: -0.01em; }
-      .subnav .actions { display: flex; align-items: center; gap: 1.5rem; }
-      .subnav .actions a { font-size: 0.75rem; color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
-      .subnav .actions a:hover { color: #0066cc; }
-      .btn-blue { background: #0066cc; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; border: none; cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
-      .btn-blue:hover { opacity: 0.85; }
-      .btn-white { background: white; color: black; padding: 0.75rem 2rem; border-radius: 9999px; font-weight: 600; font-size: 1.0625rem; border: none; cursor: pointer; text-decoration: none; display: inline-block; transition: opacity 0.2s; }
-      .btn-white:hover { opacity: 0.85; }
-      .btn-white-lg { padding: 1rem 3rem; font-size: 1.1875rem; font-weight: 700; }
+      nav { position: fixed; top: 0; width: 100%; z-index: 50; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(226,232,240,0.5); }
+      nav .inner { max-width: 80rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; height: 5rem; }
+      nav .brand { font-family: "Manrope", sans-serif; font-size: 1.25rem; font-weight: 800; color: #0f172a; }
+      nav .brand span { color: #0058be; font-weight: 900; }
+      nav .links { display: flex; gap: 2.5rem; }
+      nav .links a { font-size: 0.875rem; font-weight: 500; color: #64748b; text-decoration: none; transition: color 0.2s; }
+      nav .links a:hover { color: #0f172a; }
+      nav .cta { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 0.625rem 1.5rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 700; border: none; cursor: pointer; text-decoration: none; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
+      nav .cta::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transition: 0.5s; }
+      nav .cta:hover::after { left: 100%; }
+      nav .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,88,190,0.2); }
 
       /* Hero */
-      .hero { padding: 8rem 1.5rem 12rem; text-align: center; position: relative; overflow: hidden; }
-      .hero .content { max-width: 1024px; margin: 0 auto; position: relative; z-index: 1; }
-      .hero .intro { font-size: 1.0625rem; font-weight: 600; color: white; opacity: 0.9; letter-spacing: -0.01em; margin-bottom: 1.5rem; }
-      .hero h1 { font-size: clamp(3rem, 7vw, 5.25rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; background: linear-gradient(180deg, #fff 0%, #a1a1a6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-      .hero .actions { display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-top: 2rem; }
-      .hero .actions .link { color: #0066cc; font-size: 1.0625rem; font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 0.25rem; }
-      .hero .actions .link:hover { text-decoration: underline; }
-      .hero .visual { margin-top: 6rem; position: relative; display: flex; justify-content: center; }
-      .hero .visual .glow { position: absolute; inset: 0; background: rgba(255,255,255,0.05); filter: blur(120px); border-radius: 50%; transform: scale(0.75); opacity: 0.2; }
-      .hero .visual img { position: relative; max-width: 500px; width: 100%; filter: drop-shadow(0 0 80px rgba(255,255,255,0.03)); border-radius: 2rem; }
-      .hero .pricing-note { margin-top: 1.5rem; font-size: 0.875rem; color: #86868b; }
-      .hero .pricing-note span { color: #0066cc; }
+      .hero { max-width: 80rem; margin: 0 auto; padding: 11rem 2rem 8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; }
+      .hero-content { display: flex; flex-direction: column; gap: 2.5rem; }
+      .hero-badge { display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.375rem 1rem; border-radius: 9999px; background: #f8fafc; border: 1px solid rgba(226,232,240,0.4); font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; width: fit-content; }
+      .hero-badge .dot { position: relative; width: 0.5rem; height: 0.5rem; }
+      .hero-badge .dot::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #0058be; animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
+      .hero-badge .dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #0058be; }
+      @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+      .hero h1 { font-size: clamp(3rem, 5vw, 4.5rem); line-height: 1.05; font-weight: 800; }
+      .hero h1 .gradient { background: linear-gradient(to right, #0f172a, rgba(0,88,190,0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+      .hero p { font-size: 1.25rem; color: #64748b; max-width: 28rem; line-height: 1.6; font-weight: 300; }
+      .hero-actions { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+      .hero-actions .primary { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 1.25rem 2.5rem; border-radius: 9999px; font-size: 1rem; font-weight: 700; border: none; cursor: pointer; text-decoration: none; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
+      .hero-actions .primary::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); transition: 0.6s; }
+      .hero-actions .primary:hover::after { left: 100%; }
+      .hero-actions .primary:hover { transform: translateY(-3px); box-shadow: 0 16px 32px -8px rgba(0,88,190,0.2); }
+      .hero-actions .secondary { font-size: 0.875rem; color: #64748b; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+      .hero-actions .secondary:hover { border-color: #cbd5e1; }
+      .hero-visual { position: relative; display: flex; justify-content: center; animation: float 6s ease-in-out infinite; }
+      .hero-visual img { max-width: 100%; height: auto; filter: drop-shadow(0 30px 60px rgba(0,88,190,0.12)); border-radius: 2rem; transition: transform 0.5s ease; }
+      .hero-visual:hover img { transform: scale(1.03); }
+      .hero-visual .glow { position: absolute; inset: -2rem; background: radial-gradient(circle, rgba(0,88,190,0.08) 0%, rgba(99,102,241,0.04) 50%, transparent 70%); border-radius: 50%; filter: blur(3rem); }
+      .hero-visual .ring { position: absolute; inset: -1.5rem; border: 1px solid rgba(0,88,190,0.08); border-radius: 50%; }
+      .hero-visual .ring-outer { position: absolute; inset: -3rem; border: 1px solid rgba(0,88,190,0.04); border-radius: 50%; }
+      .trust { display: flex; align-items: center; gap: 2rem; opacity: 0.4; padding-top: 4rem; }
+      .trust .line { width: 1px; height: 1.5rem; background: #cbd5e1; }
+      .trust span { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; }
 
-      /* Statement */
-      .statement { padding: 12rem 1.5rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
-      .statement h2 { font-size: clamp(1.75rem, 4vw, 3rem); font-weight: 700; line-height: 1.2; color: rgba(255,255,255,0.9); }
-      .statement h2 span { color: rgba(255,255,255,0.4); }
-      .statement p { margin-top: 3rem; font-size: clamp(1.1rem, 2vw, 1.3rem); color: #86868b; font-weight: 500; max-width: 40rem; margin-left: auto; margin-right: auto; line-height: 1.6; }
-
-      /* Features grid */
-      .features { padding: 8rem 1.5rem; background: rgba(29,29,31,0.3); }
-      .features .inner { max-width: 1024px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
-      .feature-card { background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); border-radius: 1.5rem; padding: 2.5rem; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; min-height: 20rem; }
-      .feature-card .material-symbols-outlined { font-size: 2rem; color: white; margin-bottom: 1.5rem; }
-      .feature-card h3 { font-size: 1.5rem; font-weight: 700; color: white; margin-bottom: 1rem; }
-      .feature-card p { font-size: 0.9375rem; color: #86868b; line-height: 1.6; }
+      /* Features */
+      .features { max-width: 80rem; margin: 0 auto; padding: 8rem 2rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+      .features .feature { display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem; border-radius: 1.25rem; border: 1px solid rgba(226,232,240,0.5); background: rgba(255,255,255,0.6); backdrop-filter: blur(12px); transition: all 0.4s cubic-bezier(0.16,1,0.3,1); }
+      .features .feature:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -12px rgba(0,88,190,0.08); border-color: rgba(0,88,190,0.15); background: rgba(255,255,255,0.9); }
+      .features .icon-box { width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(0,88,190,0.08), rgba(99,102,241,0.06)); border-radius: 1rem; transition: all 0.3s ease; }
+      .features .feature:hover .icon-box { background: linear-gradient(135deg, #0058be, #6366f1); }
+      .features .icon-box .material-symbols-outlined { color: #0058be; transition: color 0.3s ease; }
+      .features .feature:hover .icon-box .material-symbols-outlined { color: white; }
+      .features h3 { font-size: 1.25rem; font-weight: 700; }
+      .features p { font-size: 0.875rem; color: #64748b; line-height: 1.6; }
 
       /* Pricing */
-      .pricing { padding: 8rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); }
-      .pricing .inner { max-width: 1024px; margin: 0 auto; }
-      .pricing h2 { text-align: center; font-size: 2rem; font-weight: 700; color: white; margin-bottom: 0.75rem; }
-      .pricing .sub { text-align: center; font-size: 0.9375rem; color: #86868b; margin-bottom: 3rem; }
+      .pricing { padding: 4rem 2rem; max-width: 80rem; margin: 0 auto; background: #f8fafc; border-radius: 1.5rem; margin-bottom: 4rem; }
+      .pricing-header { text-align: center; margin-bottom: 3rem; }
+      .pricing-header h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+      .pricing-header p { color: #64748b; font-size: 0.875rem; }
       .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 48rem; margin: 0 auto; }
-      .pricing-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.25rem; padding: 2rem; text-align: center; }
-      .pricing-card.featured { border-color: #0066cc; background: rgba(0,102,204,0.06); }
-      .pricing-card .tier { font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #86868b; margin-bottom: 0.75rem; }
-      .pricing-card.featured .tier { color: #0066cc; }
-      .pricing-card .price { font-family: "Manrope", sans-serif; font-size: 2.5rem; font-weight: 800; color: white; }
-      .pricing-card .price span { font-size: 0.875rem; font-weight: 400; color: #86868b; }
-      .pricing-card .threshold { font-size: 0.75rem; color: #86868b; margin-top: 0.5rem; }
+      .pricing-card { background: white; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 2rem; text-align: center; transition: all 0.3s ease; }
+      .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px -8px rgba(0,0,0,0.06); }
+      .pricing-card .tier { font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; margin-bottom: 0.75rem; }
+      .pricing-card .price { font-family: "Manrope", sans-serif; font-size: 2.5rem; font-weight: 800; color: #0f172a; }
+      .pricing-card .price span { font-size: 0.875rem; font-weight: 500; color: #64748b; }
+      .pricing-card .threshold { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
 
       /* CTA */
-      .cta { padding: 16rem 1.5rem; position: relative; overflow: hidden; text-align: center; }
-      .cta .glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 37.5rem; height: 37.5rem; background: rgba(255,255,255,0.05); filter: blur(10rem); border-radius: 50%; opacity: 0.4; }
-      .cta h2 { font-size: clamp(2.5rem, 5vw, 3.75rem); font-weight: 700; color: white; position: relative; z-index: 1; margin-bottom: 3rem; letter-spacing: -0.03em; }
-      .cta .note { font-size: 0.875rem; color: #86868b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2rem; }
+      .cta-section { padding: 10rem 2rem; text-align: center; border-top: 1px solid rgba(226,232,240,0.3); position: relative; overflow: hidden; }
+      .cta-section .bg-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30rem; height: 30rem; background: radial-gradient(circle, rgba(0,88,190,0.06) 0%, transparent 70%); pointer-events: none; }
+      .cta-section h2 { font-size: 2.5rem; font-weight: 700; margin-bottom: 2rem; position: relative; z-index: 1; }
+      .cta-section .note { font-size: 0.875rem; color: #64748b; margin-top: 2rem; position: relative; z-index: 1; }
 
       /* Footer */
-      footer { background: #000; border-top: 1px solid rgba(255,255,255,0.1); padding: 4rem 1.5rem 5rem; }
-      footer .inner { max-width: 1024px; margin: 0 auto; }
-      footer .disclaimer { font-size: 0.75rem; color: #86868b; line-height: 1.6; margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-      footer .row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
-      footer .footer-links { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
-      footer .footer-links a, footer .footer-links span { font-size: 0.75rem; color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
-      footer .footer-links span.brand { color: white; font-weight: 600; }
-      footer .footer-links a:hover { color: white; }
-      footer .copy { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
-      footer .legal { margin-top: 2rem; display: flex; gap: 1.5rem; align-items: center; }
-      footer .legal a { font-size: 0.75rem; color: rgba(255,255,255,0.4); text-decoration: none; transition: color 0.2s; }
-      footer .legal a:hover { color: white; }
-      footer .legal .sep { width: 1px; height: 0.75rem; background: rgba(255,255,255,0.1); }
+      footer { background: white; border-top: 1px solid rgba(226,232,240,0.5); padding: 5rem 2rem; }
+      footer .inner { max-width: 80rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem; }
+      footer .brand { font-family: "Manrope", sans-serif; font-size: 1.125rem; font-weight: 900; text-transform: uppercase; }
+      footer .copy { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.15em; }
+      footer .footer-links { display: flex; gap: 3rem; }
+      footer .footer-links a { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; text-decoration: none; transition: color 0.2s; }
+      footer .footer-links a:hover { color: #0f172a; }
 
       @media (max-width: 768px) {
-        .nav .links, .subnav .actions a { display: none; }
-        .features .inner, .pricing-grid { grid-template-columns: 1fr; }
-        .hero .visual img { max-width: 90%; }
+        .hero { grid-template-columns: 1fr; padding-top: 8rem; }
+        .hero-visual { display: none; }
+        .features { grid-template-columns: 1fr; }
+        .pricing-grid { grid-template-columns: 1fr; }
+        nav .links { display: none; }
       }
     </style>
   </head>
   <body>
-    <!-- Global Nav -->
-    <nav class="nav">
+    <nav>
       <div class="inner">
         <div class="brand">Margin Machines<span>.</span></div>
         <div class="links">
           <a href="#features">Platform</a>
           <a href="#pricing">Pricing</a>
-          <a href="https://github.com/breue/clawos">GitHub</a>
         </div>
-        <div>
-          <span class="material-symbols-outlined" style="font-size:18px; color:rgba(255,255,255,0.8); cursor:pointer;">search</span>
-        </div>
+        <a class="cta" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06">Get Started</a>
       </div>
     </nav>
 
-    <!-- Product Sub-nav -->
-    <div class="subnav">
-      <div class="inner">
-        <div class="title">Margin Machines</div>
-        <div class="actions">
-          <a href="#features">Overview</a>
-          <a href="#pricing">Pricing</a>
-          <a class="btn-blue" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06">Try Free</a>
-        </div>
-      </div>
-    </div>
-
     <main>
-      <!-- Hero -->
       <section class="hero">
-        <div class="content">
-          <p class="intro">Introducing V2.0</p>
-          <h1>Your AI team.<br>Now purely local.</h1>
-          <div class="actions">
-            <a class="btn-white" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06">Start 7-day free trial</a>
-            <a class="link" href="#features">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="dot"></span>
+            <span>V2.0 Local Engine</span>
+          </div>
+          <h1>Your AI team,<br><span class="gradient">running locally.</span></h1>
+          <p>9 specialized agents that research, code, write, design, and plan — orchestrated on your machine. Powered by Claude and OpenClaw.</p>
+          <div class="hero-actions">
+            <a class="primary" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06">Start 7-Day Free Trial</a>
+            <a class="secondary" href="#features">
               Explore the platform
-              <span class="material-symbols-outlined" style="font-size:20px;">play_circle</span>
+              <span class="material-symbols-outlined" style="font-size:1rem;">arrow_forward</span>
             </a>
           </div>
-          <p class="pricing-note">Starts at $50/month after trial. Scales with usage. <span>Have a promo code? Enter it at checkout.</span></p>
-          <div class="visual">
-            <div class="glow"></div>
-            <img src="https://marginmachines.com/assets/logo-CBQU2g__.png" alt="Margin Machines" />
+          <p style="font-size:0.875rem; color:#64748b; margin-top:-0.5rem;">Starts at $50/month after trial. Scales with usage. <span style="color:#0058be;">Have a promo code? Enter it at checkout.</span></p>
+          <div class="trust">
+            <div class="line"></div>
+            <span>Private. Local. Intelligent.</span>
           </div>
         </div>
-      </section>
-
-      <!-- Statement -->
-      <section class="statement">
-        <div style="max-width:800px; margin:0 auto;">
-          <h2>Privacy isn't a feature.<br><span>It's a requirement.</span></h2>
-          <p>Margin Machines runs entirely on your machine. 9 specialized agents that research, code, write, design, and plan — orchestrated locally. No data ever leaves your device.</p>
+        <div class="hero-visual">
+          <div class="glow"></div>
+          <div class="ring"></div>
+          <div class="ring-outer"></div>
+          <img src="https://marginmachines.com/assets/logo-CBQU2g__.png" alt="Margin Machines" width="400" height="400" />
         </div>
       </section>
 
-      <!-- Features -->
       <section class="features" id="features">
-        <div class="inner">
-          <div class="feature-card">
-            <span class="material-symbols-outlined">smart_toy</span>
-            <h3>9 Specialist Agents.</h3>
-            <p>Coding, research, writing, design, QA, ops, data, planning, and a coordinator — each with the right tools and persona for the job.</p>
-          </div>
-          <div class="feature-card">
-            <span class="material-symbols-outlined">shield_lock</span>
-            <h3>Zero Cloud Dependency.</h3>
-            <p>Everything runs on your Mac via OpenClaw. Your projects, your data, your agents — locked to your hardware.</p>
-          </div>
-          <div class="feature-card">
-            <span class="material-symbols-outlined">psychology</span>
-            <h3>Learns From You.</h3>
-            <p>Suggests tasks based on your work patterns, remembers lessons across sessions, and gets smarter with every interaction.</p>
-          </div>
+        <div class="feature">
+          <div class="icon-box"><span class="material-symbols-outlined">smart_toy</span></div>
+          <h3>9 Specialized Agents</h3>
+          <p>Coding, research, writing, design, QA, ops, data, planning, and a coordinator — each with the right tools for the job.</p>
+        </div>
+        <div class="feature">
+          <div class="icon-box"><span class="material-symbols-outlined">shield_lock</span></div>
+          <h3>Runs on Your Machine</h3>
+          <p>Everything stays local. Your data, your projects, your agents. Native macOS app with one-click setup.</p>
+        </div>
+        <div class="feature">
+          <div class="icon-box"><span class="material-symbols-outlined">psychology</span></div>
+          <h3>Learns From You</h3>
+          <p>Suggests tasks based on your work patterns, remembers lessons across sessions, and gets smarter over time.</p>
         </div>
       </section>
 
-      <!-- Pricing -->
       <section class="pricing" id="pricing">
-        <div class="inner">
+        <div class="pricing-header">
           <h2>Simple, usage-based pricing</h2>
-          <p class="sub">Start with a 7-day free trial. Your plan scales automatically with your Anthropic API usage.</p>
-          <div class="pricing-grid">
-            <div class="pricing-card">
-              <div class="tier">Starter</div>
-              <div class="price">$50<span>/mo</span></div>
-              <div class="threshold">Up to $500 Anthropic spend</div>
-            </div>
-            <div class="pricing-card featured">
-              <div class="tier">Growth</div>
-              <div class="price">$150<span>/mo</span></div>
-              <div class="threshold">Up to $2,500 Anthropic spend</div>
-            </div>
-            <div class="pricing-card">
-              <div class="tier">Scale</div>
-              <div class="price">$250<span>/mo</span></div>
-              <div class="threshold">Up to $5,000 Anthropic spend</div>
-            </div>
+          <p>Start with a 7-day free trial. Your plan scales automatically with your Anthropic API usage.</p>
+        </div>
+        <div class="pricing-grid">
+          <div class="pricing-card">
+            <div class="tier">Starter</div>
+            <div class="price">$50<span>/mo</span></div>
+            <div class="threshold">Up to $500 Anthropic spend</div>
+          </div>
+          <div class="pricing-card" style="border-color: #0058be; box-shadow: 0 4px 24px rgba(0,88,190,0.08);">
+            <div class="tier" style="color: #0058be;">Growth</div>
+            <div class="price">$150<span>/mo</span></div>
+            <div class="threshold">Up to $2,500 Anthropic spend</div>
+          </div>
+          <div class="pricing-card">
+            <div class="tier">Scale</div>
+            <div class="price">$250<span>/mo</span></div>
+            <div class="threshold">Up to $5,000 Anthropic spend</div>
           </div>
         </div>
       </section>
 
-      <!-- CTA -->
-      <section class="cta">
-        <div class="glow"></div>
-        <h2>Think different.<br>Work local.</h2>
-        <a class="btn-white btn-white-lg" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06" style="position:relative; z-index:1;">Get Started for Free</a>
-        <p class="note" style="position:relative; z-index:1;">Available now for macOS</p>
+      <section class="cta-section">
+        <div class="bg-glow"></div>
+        <h2>Ready to evolve your workflow?</h2>
+        <a class="primary" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06" style="display:inline-flex; background:#0f172a; color:white; padding:1.25rem 3rem; border-radius:9999px; font-size:1.125rem; font-weight:700; text-decoration:none; transition:all 0.3s;">Start Free Trial</a>
+        <p class="note">7-day free trial. No commitment. Cancel anytime.</p>
       </section>
     </main>
 
-    <!-- Footer -->
     <footer>
       <div class="inner">
-        <div class="disclaimer">1. Local execution requires macOS 12+ with minimum 8GB RAM recommended. 2. Performance depends on your Anthropic API key and local hardware. Margin Machines orchestrates agents locally via OpenClaw.</div>
-        <div class="row">
-          <div class="footer-links">
-            <span class="brand">Margin Machines</span>
-            <a href="https://github.com/breue/clawos">GitHub</a>
-            <a href="https://billing.stripe.com/p/login/aEUcMW4iG8U98co000">Billing</a>
-          </div>
-          <div class="copy">Copyright &copy; 2026 Margin Machines. All rights reserved.</div>
-        </div>
-        <div class="legal">
-          <a href="#">Privacy Policy</a>
-          <div class="sep"></div>
-          <a href="#">Terms of Use</a>
-          <div class="sep"></div>
-          <a href="#">Security</a>
+        <div class="brand">Margin Machines</div>
+        <div class="copy">&copy; 2026. Local First. Intelligence Always.</div>
+        <div class="footer-links">
+          <a href="https://github.com/breue/clawos">GitHub</a>
+          <a href="https://billing.stripe.com/p/login/aEUcMW4iG8U98co000">Billing</a>
         </div>
       </div>
     </footer>
