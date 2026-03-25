@@ -3,223 +3,214 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Margin Machines — Your AI team, running locally.</title>
+    <title>Margin Machines</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      * { box-sizing: border-box; margin: 0; }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html { scroll-behavior: smooth; }
-      body {
-        font-family: "Inter", "Segoe UI", sans-serif;
-        color: #0f172a;
-        background: #ffffff;
-        background-image:
-          radial-gradient(at 0% 0%, rgba(0,88,190,0.06) 0, transparent 50%),
-          radial-gradient(at 100% 0%, rgba(99,102,241,0.04) 0, transparent 50%),
-          radial-gradient(at 50% 100%, rgba(16,185,129,0.03) 0, transparent 50%);
-        background-attachment: fixed;
-        -webkit-font-smoothing: antialiased;
-      }
-      .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-        vertical-align: middle;
-      }
-      h1, h2, h3 { font-family: "Manrope", sans-serif; letter-spacing: -0.025em; }
-      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-      @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+      body { font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #1d1d1f; }
+      ::selection { background: rgba(0,102,204,0.15); }
+      img { display: block; max-width: 100%; }
+      a { text-decoration: none; color: inherit; }
 
-      /* Nav */
-      nav { position: fixed; top: 0; width: 100%; z-index: 50; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(226,232,240,0.5); }
-      nav .inner { max-width: 80rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; height: 5rem; }
-      nav .brand { font-family: "Manrope", sans-serif; font-size: 1.25rem; font-weight: 800; color: #0f172a; }
-      nav .brand span { color: #0058be; font-weight: 900; }
-      nav .links { display: flex; gap: 2.5rem; }
-      nav .links a { font-size: 0.875rem; font-weight: 500; color: #64748b; text-decoration: none; transition: color 0.2s; }
-      nav .links a:hover { color: #0f172a; }
-      nav .cta { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 0.625rem 1.5rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 700; border: none; cursor: pointer; text-decoration: none; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
-      nav .cta::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transition: 0.5s; }
-      nav .cta:hover::after { left: 100%; }
-      nav .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,88,190,0.2); }
+      /* ── Nav ─────────────────────────────────────────────────── */
+      .nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(251,251,253,0.8); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,0.04); }
+      .nav-inner { max-width: 980px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 22px; height: 48px; }
+      .nav-brand { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; color: #1d1d1f; }
+      .nav-links { display: flex; gap: 28px; }
+      .nav-links a { font-size: 12px; color: #1d1d1f; opacity: 0.8; transition: opacity 0.2s; }
+      .nav-links a:hover { opacity: 1; }
+      .nav-cta { font-size: 12px; color: #06c; font-weight: 400; transition: opacity 0.2s; }
+      .nav-cta:hover { opacity: 0.7; }
 
-      /* Hero */
-      .hero { max-width: 80rem; margin: 0 auto; padding: 11rem 2rem 8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; }
-      .hero-content { display: flex; flex-direction: column; gap: 2.5rem; }
-      .hero-badge { display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.375rem 1rem; border-radius: 9999px; background: #f8fafc; border: 1px solid rgba(226,232,240,0.4); font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; width: fit-content; }
-      .hero-badge .dot { position: relative; width: 0.5rem; height: 0.5rem; }
-      .hero-badge .dot::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #0058be; animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
-      .hero-badge .dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #0058be; }
-      @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
-      .hero h1 { font-size: clamp(3rem, 5vw, 4.5rem); line-height: 1.05; font-weight: 800; }
-      .hero h1 .gradient { background: linear-gradient(to right, #0f172a, rgba(0,88,190,0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-      .hero p { font-size: 1.25rem; color: #64748b; max-width: 28rem; line-height: 1.6; font-weight: 300; }
-      .hero-actions { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
-      .hero-actions .primary { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 1.25rem 2.5rem; border-radius: 9999px; font-size: 1rem; font-weight: 700; border: none; cursor: pointer; text-decoration: none; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
-      .hero-actions .primary::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); transition: 0.6s; }
-      .hero-actions .primary:hover::after { left: 100%; }
-      .hero-actions .primary:hover { transform: translateY(-3px); box-shadow: 0 16px 32px -8px rgba(0,88,190,0.2); }
-      .hero-actions .secondary { font-size: 0.875rem; color: #64748b; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
-      .hero-actions .secondary:hover { border-color: #cbd5e1; }
-      .hero-visual { position: relative; display: flex; justify-content: center; animation: float 6s ease-in-out infinite; }
-      .hero-visual img { max-width: 100%; height: auto; filter: drop-shadow(0 30px 60px rgba(0,88,190,0.12)); border-radius: 2rem; transition: transform 0.5s ease; }
-      .hero-visual:hover img { transform: scale(1.03); }
-      .hero-visual .glow { position: absolute; inset: -2rem; background: radial-gradient(circle, rgba(0,88,190,0.08) 0%, rgba(99,102,241,0.04) 50%, transparent 70%); border-radius: 50%; filter: blur(3rem); }
-      .hero-visual .ring { position: absolute; inset: -1.5rem; border: 1px solid rgba(0,88,190,0.08); border-radius: 50%; }
-      .hero-visual .ring-outer { position: absolute; inset: -3rem; border: 1px solid rgba(0,88,190,0.04); border-radius: 50%; }
-      .trust { display: flex; align-items: center; gap: 2rem; opacity: 0.4; padding-top: 4rem; }
-      .trust .line { width: 1px; height: 1.5rem; background: #cbd5e1; }
-      .trust span { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; }
+      /* ── Hero (dark) ─────────────────────────────────────────── */
+      .hero { background: #000; color: #f5f5f7; padding: 120px 22px 80px; text-align: center; overflow: hidden; }
+      .hero-inner { max-width: 980px; margin: 0 auto; }
+      .hero-eyebrow { font-size: 17px; font-weight: 600; letter-spacing: -0.005em; color: #f5f5f7; margin-bottom: 12px; }
+      .hero h1 { font-size: clamp(48px, 8vw, 80px); font-weight: 700; letter-spacing: -0.04em; line-height: 1.05; background: linear-gradient(180deg, #fff 30%, #86868b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+      .hero-sub { margin-top: 16px; font-size: 21px; font-weight: 400; color: #86868b; letter-spacing: 0.011em; line-height: 1.38; max-width: 520px; margin-left: auto; margin-right: auto; }
+      .hero-actions { margin-top: 28px; display: flex; justify-content: center; gap: 24px; align-items: center; }
+      .hero-actions .btn { display: inline-block; font-size: 17px; padding: 12px 28px; border-radius: 980px; font-weight: 600; letter-spacing: -0.005em; transition: all 0.2s; }
+      .hero-actions .btn-primary { background: #fff; color: #1d1d1f; }
+      .hero-actions .btn-primary:hover { background: rgba(255,255,255,0.85); }
+      .hero-actions .btn-link { color: #2997ff; font-size: 17px; font-weight: 400; }
+      .hero-actions .btn-link:hover { text-decoration: underline; }
+      .hero-image { margin-top: 64px; position: relative; }
+      .hero-image img { margin: 0 auto; width: 400px; filter: drop-shadow(0 0 120px rgba(255,255,255,0.06)); }
+      .hero-pricing { margin-top: 20px; font-size: 14px; color: #86868b; }
+      .hero-pricing span { color: #2997ff; }
 
-      /* Features */
-      .features { max-width: 80rem; margin: 0 auto; padding: 8rem 2rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
-      .features .feature { display: flex; flex-direction: column; gap: 1.5rem; padding: 2.5rem; border-radius: 1.25rem; border: 1px solid rgba(226,232,240,0.5); background: rgba(255,255,255,0.6); backdrop-filter: blur(12px); transition: all 0.4s cubic-bezier(0.16,1,0.3,1); }
-      .features .feature:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -12px rgba(0,88,190,0.08); border-color: rgba(0,88,190,0.15); background: rgba(255,255,255,0.9); }
-      .features .icon-box { width: 3.5rem; height: 3.5rem; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(0,88,190,0.08), rgba(99,102,241,0.06)); border-radius: 1rem; transition: all 0.3s ease; }
-      .features .feature:hover .icon-box { background: linear-gradient(135deg, #0058be, #6366f1); }
-      .features .icon-box .material-symbols-outlined { color: #0058be; transition: color 0.3s ease; }
-      .features .feature:hover .icon-box .material-symbols-outlined { color: white; }
-      .features h3 { font-size: 1.25rem; font-weight: 700; }
-      .features p { font-size: 0.875rem; color: #64748b; line-height: 1.6; }
+      /* ── Statement ───────────────────────────────────────────── */
+      .statement { padding: 160px 22px; text-align: center; background: #fff; }
+      .statement-inner { max-width: 780px; margin: 0 auto; }
+      .statement h2 { font-size: clamp(32px, 5vw, 48px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; color: #1d1d1f; }
+      .statement p { margin-top: 24px; font-size: 19px; font-weight: 400; color: #86868b; line-height: 1.47; letter-spacing: 0.012em; max-width: 600px; margin-left: auto; margin-right: auto; }
 
-      /* Pricing */
-      .pricing { padding: 4rem 2rem; max-width: 80rem; margin: 0 auto; background: #f8fafc; border-radius: 1.5rem; margin-bottom: 4rem; }
-      .pricing-header { text-align: center; margin-bottom: 3rem; }
-      .pricing-header h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
-      .pricing-header p { color: #64748b; font-size: 0.875rem; }
-      .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 48rem; margin: 0 auto; }
-      .pricing-card { background: white; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 2rem; text-align: center; transition: all 0.3s ease; }
-      .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px -8px rgba(0,0,0,0.06); }
-      .pricing-card .tier { font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; margin-bottom: 0.75rem; }
-      .pricing-card .price { font-family: "Manrope", sans-serif; font-size: 2.5rem; font-weight: 800; color: #0f172a; }
-      .pricing-card .price span { font-size: 0.875rem; font-weight: 500; color: #64748b; }
-      .pricing-card .threshold { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
+      /* ── Feature Tiles ───────────────────────────────────────── */
+      .tiles { background: #f5f5f7; padding: 100px 22px; }
+      .tiles-inner { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .tile { border-radius: 28px; padding: 56px 48px; display: flex; flex-direction: column; justify-content: flex-end; min-height: 400px; position: relative; overflow: hidden; }
+      .tile-dark { background: #1d1d1f; color: #f5f5f7; }
+      .tile-light { background: #fff; color: #1d1d1f; }
+      .tile-full { grid-column: 1 / -1; min-height: 320px; text-align: center; align-items: center; justify-content: center; }
+      .tile-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; opacity: 0.5; }
+      .tile h3 { font-size: 32px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.12; margin-bottom: 12px; }
+      .tile p { font-size: 14px; line-height: 1.47; opacity: 0.7; max-width: 320px; }
+      .tile-full p { max-width: 480px; }
+      .tile .tile-icon { font-size: 48px; margin-bottom: 20px; opacity: 0.15; position: absolute; top: 40px; right: 40px; }
 
-      /* CTA */
-      .cta-section { padding: 10rem 2rem; text-align: center; border-top: 1px solid rgba(226,232,240,0.3); position: relative; overflow: hidden; }
-      .cta-section .bg-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30rem; height: 30rem; background: radial-gradient(circle, rgba(0,88,190,0.06) 0%, transparent 70%); pointer-events: none; }
-      .cta-section h2 { font-size: 2.5rem; font-weight: 700; margin-bottom: 2rem; position: relative; z-index: 1; }
-      .cta-section .note { font-size: 0.875rem; color: #64748b; margin-top: 2rem; position: relative; z-index: 1; }
+      /* ── Pricing ─────────────────────────────────────────────── */
+      .pricing { padding: 120px 22px; background: #fff; text-align: center; }
+      .pricing-inner { max-width: 980px; margin: 0 auto; }
+      .pricing h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+      .pricing .sub { font-size: 17px; color: #86868b; margin-bottom: 48px; }
+      .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 720px; margin: 0 auto; }
+      .pricing-card { background: #f5f5f7; border-radius: 20px; padding: 40px 24px; transition: transform 0.3s ease; }
+      .pricing-card:hover { transform: translateY(-4px); }
+      .pricing-card.featured { background: #1d1d1f; color: #f5f5f7; }
+      .pricing-tier { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.5; margin-bottom: 16px; }
+      .pricing-card.featured .pricing-tier { color: #2997ff; opacity: 1; }
+      .pricing-amount { font-size: 48px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+      .pricing-amount span { font-size: 17px; font-weight: 400; opacity: 0.5; }
+      .pricing-note { margin-top: 12px; font-size: 14px; opacity: 0.5; }
 
-      /* Footer */
-      footer { background: white; border-top: 1px solid rgba(226,232,240,0.5); padding: 5rem 2rem; }
-      footer .inner { max-width: 80rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem; }
-      footer .brand { font-family: "Manrope", sans-serif; font-size: 1.125rem; font-weight: 900; text-transform: uppercase; }
-      footer .copy { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.15em; }
-      footer .footer-links { display: flex; gap: 3rem; }
-      footer .footer-links a { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; text-decoration: none; transition: color 0.2s; }
-      footer .footer-links a:hover { color: #0f172a; }
+      /* ── CTA ─────────────────────────────────────────────────── */
+      .cta { padding: 160px 22px; background: #000; text-align: center; color: #f5f5f7; }
+      .cta h2 { font-size: clamp(36px, 6vw, 56px); font-weight: 700; letter-spacing: -0.04em; line-height: 1.07; margin-bottom: 32px; }
+      .cta .btn { display: inline-block; font-size: 17px; padding: 14px 32px; border-radius: 980px; font-weight: 600; background: #fff; color: #1d1d1f; transition: all 0.2s; }
+      .cta .btn:hover { background: rgba(255,255,255,0.85); }
+      .cta .note { margin-top: 20px; font-size: 14px; color: #86868b; }
 
-      @media (max-width: 768px) {
-        .hero { grid-template-columns: 1fr; padding-top: 8rem; }
-        .hero-visual { display: none; }
-        .features { grid-template-columns: 1fr; }
-        .pricing-grid { grid-template-columns: 1fr; }
-        nav .links { display: none; }
+      /* ── Footer ──────────────────────────────────────────────── */
+      .footer { background: #f5f5f7; padding: 20px 22px; }
+      .footer-inner { max-width: 980px; margin: 0 auto; }
+      .footer-disclaimer { font-size: 12px; color: #6e6e73; line-height: 1.47; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.08); margin-bottom: 12px; }
+      .footer-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+      .footer-links { display: flex; gap: 20px; }
+      .footer-links a { font-size: 12px; color: #424245; transition: color 0.2s; }
+      .footer-links a:hover { color: #1d1d1f; }
+      .footer-copy { font-size: 12px; color: #6e6e73; }
+
+      /* ── Responsive ──────────────────────────────────────────── */
+      @media (max-width: 734px) {
+        .nav-links { display: none; }
+        .tiles-inner { grid-template-columns: 1fr; }
+        .pricing-grid { grid-template-columns: 1fr; max-width: 320px; }
+        .tile { padding: 40px 32px; min-height: 300px; }
       }
     </style>
   </head>
   <body>
-    <nav>
-      <div class="inner">
-        <div class="brand">Margin Machines<span>.</span></div>
-        <div class="links">
-          <a href="#features">Platform</a>
+
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="#" class="nav-brand">Margin Machines</a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
           <a href="#pricing">Pricing</a>
+          <a href="https://github.com/breue/clawos">GitHub</a>
         </div>
-        <a class="cta" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06">Get Started</a>
+        <a href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06" class="nav-cta">Get Started</a>
       </div>
     </nav>
 
-    <main>
-      <section class="hero">
-        <div class="hero-content">
-          <div class="hero-badge">
-            <span class="dot"></span>
-            <span>V2.0 Local Engine</span>
-          </div>
-          <h1>Your AI team,<br><span class="gradient">running locally.</span></h1>
-          <p>9 specialized agents that research, code, write, design, and plan — orchestrated on your machine. Powered by Claude and OpenClaw.</p>
-          <div class="hero-actions">
-            <a class="primary" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06">Start 7-Day Free Trial</a>
-            <a class="secondary" href="#features">
-              Explore the platform
-              <span class="material-symbols-outlined" style="font-size:1rem;">arrow_forward</span>
-            </a>
-          </div>
-          <p style="font-size:0.875rem; color:#64748b; margin-top:-0.5rem;">Starts at $50/month after trial. Scales with usage. <span style="color:#0058be;">Have a promo code? Enter it at checkout.</span></p>
-          <div class="trust">
-            <div class="line"></div>
-            <span>Private. Local. Intelligent.</span>
-          </div>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="hero-eyebrow">Introducing Margin Machines</p>
+        <h1>Your AI team.<br>Running locally.</h1>
+        <p class="hero-sub">Nine specialized agents that research, code, write, design, and plan. All orchestrated on your machine.</p>
+        <div class="hero-actions">
+          <a href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06" class="btn btn-primary">Start free trial</a>
+          <a href="#features" class="btn-link">Learn more &#8250;</a>
         </div>
-        <div class="hero-visual">
-          <div class="glow"></div>
-          <div class="ring"></div>
-          <div class="ring-outer"></div>
+        <div class="hero-image">
           <img src="https://marginmachines.com/assets/logo-CBQU2g__.png" alt="Margin Machines" width="400" height="400" />
         </div>
-      </section>
+        <p class="hero-pricing">From $50/month after trial. <span>Promo code? Enter at checkout.</span></p>
+      </div>
+    </section>
 
-      <section class="features" id="features">
-        <div class="feature">
-          <div class="icon-box"><span class="material-symbols-outlined">smart_toy</span></div>
-          <h3>9 Specialized Agents</h3>
-          <p>Coding, research, writing, design, QA, ops, data, planning, and a coordinator — each with the right tools for the job.</p>
-        </div>
-        <div class="feature">
-          <div class="icon-box"><span class="material-symbols-outlined">shield_lock</span></div>
-          <h3>Runs on Your Machine</h3>
-          <p>Everything stays local. Your data, your projects, your agents. Native macOS app with one-click setup.</p>
-        </div>
-        <div class="feature">
-          <div class="icon-box"><span class="material-symbols-outlined">psychology</span></div>
-          <h3>Learns From You</h3>
-          <p>Suggests tasks based on your work patterns, remembers lessons across sessions, and gets smarter over time.</p>
-        </div>
-      </section>
+    <!-- Statement -->
+    <section class="statement">
+      <div class="statement-inner">
+        <h2>Privacy is not a feature.<br>It's the architecture.</h2>
+        <p>Everything runs on your Mac. Your data never leaves your device. No cloud latency. No API queues. No compromises.</p>
+      </div>
+    </section>
 
-      <section class="pricing" id="pricing">
-        <div class="pricing-header">
-          <h2>Simple, usage-based pricing</h2>
-          <p>Start with a 7-day free trial. Your plan scales automatically with your Anthropic API usage.</p>
+    <!-- Feature Tiles -->
+    <section class="tiles" id="features">
+      <div class="tiles-inner">
+        <div class="tile tile-dark">
+          <span class="tile-icon">&#x1F916;</span>
+          <div class="tile-eyebrow">Agents</div>
+          <h3>Nine specialists.<br>One team.</h3>
+          <p>Coding, research, writing, design, QA, ops, data, planning, and a coordinator. Each with its own tools and persona.</p>
         </div>
+        <div class="tile tile-light">
+          <span class="tile-icon">&#x1F9E0;</span>
+          <div class="tile-eyebrow">Intelligence</div>
+          <h3>It learns<br>from you.</h3>
+          <p>Suggests tasks based on your patterns. Remembers lessons across sessions. Gets smarter with every interaction.</p>
+        </div>
+        <div class="tile tile-full tile-light" style="background: linear-gradient(135deg, #fbfbfd, #f0f1f6);">
+          <div class="tile-eyebrow">Orchestration</div>
+          <h3>Powered by Claude. Orchestrated by OpenClaw.</h3>
+          <p>The best AI models, running through a local agent framework. Screen recording, voice input, and 170+ specialist personas.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+      <div class="pricing-inner">
+        <h2>Choose your plan.</h2>
+        <p class="sub">Start with a 7-day free trial. Scales with your Anthropic API usage.</p>
         <div class="pricing-grid">
           <div class="pricing-card">
-            <div class="tier">Starter</div>
-            <div class="price">$50<span>/mo</span></div>
-            <div class="threshold">Up to $500 Anthropic spend</div>
+            <div class="pricing-tier">Starter</div>
+            <div class="pricing-amount">$50<span>/mo</span></div>
+            <div class="pricing-note">Up to $500 API spend</div>
           </div>
-          <div class="pricing-card" style="border-color: #0058be; box-shadow: 0 4px 24px rgba(0,88,190,0.08);">
-            <div class="tier" style="color: #0058be;">Growth</div>
-            <div class="price">$150<span>/mo</span></div>
-            <div class="threshold">Up to $2,500 Anthropic spend</div>
+          <div class="pricing-card featured">
+            <div class="pricing-tier">Growth</div>
+            <div class="pricing-amount">$150<span>/mo</span></div>
+            <div class="pricing-note">Up to $2,500 API spend</div>
           </div>
           <div class="pricing-card">
-            <div class="tier">Scale</div>
-            <div class="price">$250<span>/mo</span></div>
-            <div class="threshold">Up to $5,000 Anthropic spend</div>
+            <div class="pricing-tier">Scale</div>
+            <div class="pricing-amount">$250<span>/mo</span></div>
+            <div class="pricing-note">Up to $5,000 API spend</div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="cta-section">
-        <div class="bg-glow"></div>
-        <h2>Ready to evolve your workflow?</h2>
-        <a class="primary" href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06" style="display:inline-flex; background:#0f172a; color:white; padding:1.25rem 3rem; border-radius:9999px; font-size:1.125rem; font-weight:700; text-decoration:none; transition:all 0.3s;">Start Free Trial</a>
-        <p class="note">7-day free trial. No commitment. Cancel anytime.</p>
-      </section>
-    </main>
+    <!-- CTA -->
+    <section class="cta">
+      <h2>Think different.<br>Work local.</h2>
+      <a href="https://buy.stripe.com/cNi14p8W5acsena3n6dMI06" class="btn">Get started for free</a>
+      <p class="note">Available now for macOS. 7-day free trial.</p>
+    </section>
 
-    <footer>
-      <div class="inner">
-        <div class="brand">Margin Machines</div>
-        <div class="copy">&copy; 2026. Local First. Intelligence Always.</div>
-        <div class="footer-links">
-          <a href="https://github.com/breue/clawos">GitHub</a>
-          <a href="https://billing.stripe.com/p/login/aEUcMW4iG8U98co000">Billing</a>
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <p class="footer-disclaimer">Margin Machines requires macOS 12+ and an Anthropic API key. Performance depends on your hardware and API usage. All agent execution happens locally via OpenClaw.</p>
+        <div class="footer-row">
+          <div class="footer-links">
+            <a href="https://github.com/breue/clawos">GitHub</a>
+            <a href="https://billing.stripe.com/p/login/aEUcMW4iG8U98co000">Billing</a>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+          </div>
+          <span class="footer-copy">Copyright &copy; 2026 Margin Machines.</span>
         </div>
       </div>
     </footer>
+
   </body>
 </html>
