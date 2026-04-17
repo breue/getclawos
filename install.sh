@@ -105,18 +105,32 @@ if [ ! -x "./bin/clawos" ]; then
   chmod +x ./bin/clawos
 fi
 
-# Ensure brew Ruby and Node are in PATH
-if [ -x /opt/homebrew/bin/brew ]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+# Prefer the Mac app's bundled runtime if it was extracted to ~/.clawos/runtime
+# (present on v3.5.0+). With the bundled runtime we skip Homebrew detection
+# entirely — the user shouldn't need any system deps.
+MM_RUNTIME="$HOME/.clawos/runtime"
+if [ -x "$MM_RUNTIME/bin/ruby" ]; then
+  export MM_RUNTIME
+  export PATH="$MM_RUNTIME/bin:$PATH"
+  export GEM_PATH="$MM_RUNTIME/vendor/bundle/ruby/$("$MM_RUNTIME/bin/ruby" -e 'print Gem.ruby_api_version')"
+  export BUNDLE_APP_CONFIG="$MM_RUNTIME/.bundle"
+  export BUNDLE_PATH="$MM_RUNTIME/vendor/bundle"
+  export BUNDLE_DISABLE_SHARED_GEMS=true
+  echo "Using bundled Ruby runtime ($("$MM_RUNTIME/bin/ruby" -e 'print RUBY_VERSION'))"
+else
+  # Legacy path — Homebrew Ruby fallback for users on v3.4.x-style installs
+  # or dev builds without a bundled runtime.
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+  if [ -x /opt/homebrew/opt/ruby/bin/ruby ]; then
+    export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+    export GEM_HOME="$HOME/.gem/ruby/$(/opt/homebrew/opt/ruby/bin/ruby -e 'puts RUBY_VERSION' 2>/dev/null || echo '3.4.0')"
+    export PATH="$GEM_HOME/bin:$PATH"
+  fi
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null
 fi
-if [ -x /opt/homebrew/opt/ruby/bin/ruby ]; then
-  export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
-  export GEM_HOME="$HOME/.gem/ruby/$(/opt/homebrew/opt/ruby/bin/ruby -e 'puts RUBY_VERSION' 2>/dev/null || echo '3.4.0')"
-  export PATH="$GEM_HOME/bin:$PATH"
-fi
-# Load NVM if available
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null
 
 echo "Running Margin Machines installer..."
 ./bin/clawos install
