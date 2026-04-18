@@ -132,6 +132,32 @@ else
   (cd "$EXTRACTED_ROOT" && tar -cf - .) | (cd "$INSTALL_DIR" && tar -xf -)
 fi
 
+# v3.7.7 — clear Rails caches after rsync so the new source isn't
+# masked by stale compiled bytecode and asset bundles.
+#   - tmp/cache/bootsnap/: bootsnap's on-disk cache of compiled Ruby
+#     bytecode. If Ruby source files change but bootsnap sees a cache
+#     hit by path, it serves OLD bytecode. Users ended up running
+#     3.6.8 Rails code while new files sat on disk untouched.
+#   - tmp/cache/assets/: Sprockets' compiled asset digests for JS/CSS.
+#     Stale entries serve old play_controller.js after code updates,
+#     which is exactly why zach@'s dashboard clicks/chat stopped
+#     working on v3.7.6 — Rails was serving the v3.6.8 bundle.
+#   - public/assets/: precompiled assets that the Rails server may
+#     prefer over on-the-fly compilation. Wiped for same reason.
+#
+# These rebuild on first request, so a short slowdown on initial
+# launch is the only cost. Fresh installs have nothing to clear.
+echo "Clearing Rails caches so fresh source isn't masked by stale bytecode..."
+rm -rf "$INSTALL_DIR/tmp/cache/bootsnap" 2>/dev/null || true
+rm -rf "$INSTALL_DIR/tmp/cache/assets" 2>/dev/null || true
+rm -rf "$INSTALL_DIR/public/assets" 2>/dev/null || true
+
+# Touch tmp/restart.txt so an already-running Puma picks up the new
+# source on the next request. Without this, the user would have to
+# manually quit-and-reopen the app for new Rails code to take effect.
+mkdir -p "$INSTALL_DIR/tmp"
+touch "$INSTALL_DIR/tmp/restart.txt"
+
 cd "$INSTALL_DIR"
 if [ ! -x "./bin/clawos" ]; then
   chmod +x ./bin/clawos
