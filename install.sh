@@ -103,27 +103,33 @@ if [ -z "$EXTRACTED_ROOT" ]; then
   exit 1
 fi
 
-if [ -e "$INSTALL_DIR" ]; then
-  echo "Existing install found. Upgrading code, preserving data..."
-  PRESERVE_DIR="$WORK_DIR/preserve"
-  mkdir -p "$PRESERVE_DIR"
-  # Preserve: database, env config, gems, and any user files
-  for item in storage .clawos.env .bundle vendor/bundle; do
-    if [ -e "$INSTALL_DIR/$item" ]; then
-      mkdir -p "$PRESERVE_DIR/$(dirname "$item")"
-      cp -a "$INSTALL_DIR/$item" "$PRESERVE_DIR/$item"
-    fi
-  done
-  rm -rf "$INSTALL_DIR"
-fi
-
-mkdir -p "$(dirname "$INSTALL_DIR")"
-mv "$EXTRACTED_ROOT" "$INSTALL_DIR"
-
-# Restore preserved data into new install
-if [ -d "${PRESERVE_DIR:-}" ]; then
-  echo "Restoring user data..."
-  cp -a "$PRESERVE_DIR"/. "$INSTALL_DIR/" 2>/dev/null || true
+# ── Merge the new code into INSTALL_DIR (don't wipe it) ──
+# Historically this block did `rm -rf $INSTALL_DIR && mv new $INSTALL_DIR`.
+# That was fine when ~/.clawos held only the Rails source code. But
+# starting with v3.5.0 the Mac app extracts bundled runtime/,
+# openclaw-runtime/, openclaw/ into ~/.clawos BEFORE install.sh runs.
+# The rm -rf then either:
+#   (a) nuked the bundled runtimes (broken next launch), or
+#   (b) failed with "Directory not empty" because codesign-written
+#       xattrs on runtime Mach-Os prevented deletion
+# — both modes seen on the zac@ 26.4 Mac during the v3.5/v3.6 launch.
+#
+# New strategy: rsync the new code IN ON TOP, no deletion step. The
+# runtimes stay where the Mac app put them; rsync overwrites any
+# Rails source file that changed. Merge-semantics mean we don't need
+# the old preserve/restore dance either — storage/ .clawos.env
+# .bundle/ vendor/bundle are all untouched because they aren't in
+# the new source tarball.
+#
+# Stale-file caveat: if we rename/remove a Rails file between
+# releases, it'll linger on upgrade. That's a minor flaw traded for
+# robustness. Can be swept with a `git ls-files`-style manifest later.
+mkdir -p "$INSTALL_DIR"
+if command -v rsync >/dev/null 2>&1; then
+  rsync -a "$EXTRACTED_ROOT/" "$INSTALL_DIR/"
+else
+  # Fallback for rare envs without rsync — pipe through tar.
+  (cd "$EXTRACTED_ROOT" && tar -cf - .) | (cd "$INSTALL_DIR" && tar -xf -)
 fi
 
 cd "$INSTALL_DIR"
