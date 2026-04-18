@@ -27,7 +27,7 @@ require_cmd awk
 
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.clawos}"
 RELEASE_CHANNEL="${CLAWOS_RELEASE_CHANNEL:-stable}"
-MANIFEST_URL="${CLAWOS_MANIFEST_URL:-https://app.marginmachines.com/releases/${RELEASE_CHANNEL}/latest.env}"
+MANIFEST_URL="${CLAWOS_MANIFEST_URL:-https://raw.githubusercontent.com/breue/getclawos/main/releases/${RELEASE_CHANNEL}/latest.env}"
 AUTO_START="${CLAWOS_AUTO_START:-true}"
 AUTO_OPEN_DASHBOARD="${CLAWOS_AUTO_OPEN_DASHBOARD:-true}"
 
@@ -38,35 +38,61 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Margin Machines installer"
-echo "Manifest: $MANIFEST_URL"
 
-MANIFEST_PATH="$WORK_DIR/latest.env"
-curl -fsSL "$MANIFEST_URL" -o "$MANIFEST_PATH"
-
-# Only keep expected CLAWOS_* assignment lines before sourcing.
-SANITIZED_MANIFEST="$WORK_DIR/latest.sanitized.env"
-grep -E '^CLAWOS_[A-Z0-9_]+=' "$MANIFEST_PATH" > "$SANITIZED_MANIFEST"
-# shellcheck disable=SC1090
-source "$SANITIZED_MANIFEST"
-
-if [ -z "${CLAWOS_TARBALL_URL:-}" ] || [ -z "${CLAWOS_TARBALL_SHA256:-}" ]; then
-  echo "Manifest is missing CLAWOS_TARBALL_URL or CLAWOS_TARBALL_SHA256." >&2
-  exit 1
-fi
-
+# ── Source the bundle ──
+# Two modes:
+#   1. CLAWOS_LOCAL_TARBALL set → Mac app's DMG already has the source
+#      tarball inside Contents/Resources/ and passed us the path. Use
+#      it directly, skip manifest + download entirely. This is the
+#      zero-network-calls path shipped in v3.6.0.
+#   2. Otherwise → fall back to the v3.5.x flow: fetch manifest, then
+#      download the release tarball from the URL it points at.
 TARBALL_PATH="$WORK_DIR/clawos.tar.gz"
-echo "Downloading Margin Machines release bundle..."
-curl -fsSL "$CLAWOS_TARBALL_URL" -o "$TARBALL_PATH"
+if [ -n "${CLAWOS_LOCAL_TARBALL:-}" ] && [ -f "$CLAWOS_LOCAL_TARBALL" ]; then
+  echo "Using local source tarball: $CLAWOS_LOCAL_TARBALL"
+  cp "$CLAWOS_LOCAL_TARBALL" "$TARBALL_PATH"
+  # Checksum only validated if caller supplied CLAWOS_LOCAL_SHA256 —
+  # the DMG is already signed + notarized so the tarball inside it is
+  # covered by Apple's integrity check.
+  if [ -n "${CLAWOS_LOCAL_SHA256:-}" ]; then
+    ACTUAL_SHA256="$(sha256_of_file "$TARBALL_PATH")"
+    if [ "$ACTUAL_SHA256" != "$CLAWOS_LOCAL_SHA256" ]; then
+      echo "Local tarball checksum mismatch." >&2
+      echo "Expected: $CLAWOS_LOCAL_SHA256" >&2
+      echo "Actual:   $ACTUAL_SHA256" >&2
+      exit 1
+    fi
+    echo "Checksum verified."
+  fi
+else
+  echo "Manifest: $MANIFEST_URL"
+  MANIFEST_PATH="$WORK_DIR/latest.env"
+  curl -fsSL "$MANIFEST_URL" -o "$MANIFEST_PATH"
 
-ACTUAL_SHA256="$(sha256_of_file "$TARBALL_PATH")"
-if [ "$ACTUAL_SHA256" != "$CLAWOS_TARBALL_SHA256" ]; then
-  echo "Checksum mismatch for downloaded bundle." >&2
-  echo "Expected: $CLAWOS_TARBALL_SHA256" >&2
-  echo "Actual:   $ACTUAL_SHA256" >&2
-  exit 1
+  # Only keep expected CLAWOS_* assignment lines before sourcing.
+  SANITIZED_MANIFEST="$WORK_DIR/latest.sanitized.env"
+  grep -E '^CLAWOS_[A-Z0-9_]+=' "$MANIFEST_PATH" > "$SANITIZED_MANIFEST"
+  # shellcheck disable=SC1090
+  source "$SANITIZED_MANIFEST"
+
+  if [ -z "${CLAWOS_TARBALL_URL:-}" ] || [ -z "${CLAWOS_TARBALL_SHA256:-}" ]; then
+    echo "Manifest is missing CLAWOS_TARBALL_URL or CLAWOS_TARBALL_SHA256." >&2
+    exit 1
+  fi
+
+  echo "Downloading Margin Machines release bundle..."
+  curl -fsSL "$CLAWOS_TARBALL_URL" -o "$TARBALL_PATH"
+
+  ACTUAL_SHA256="$(sha256_of_file "$TARBALL_PATH")"
+  if [ "$ACTUAL_SHA256" != "$CLAWOS_TARBALL_SHA256" ]; then
+    echo "Checksum mismatch for downloaded bundle." >&2
+    echo "Expected: $CLAWOS_TARBALL_SHA256" >&2
+    echo "Actual:   $ACTUAL_SHA256" >&2
+    exit 1
+  fi
+
+  echo "Checksum verified."
 fi
-
-echo "Checksum verified."
 
 EXTRACT_DIR="$WORK_DIR/extracted"
 mkdir -p "$EXTRACT_DIR"
