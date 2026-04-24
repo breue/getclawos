@@ -301,6 +301,35 @@ if [ "$AUTO_START" = "true" ]; then
   fi
 fi
 
+# Pre-warm openclaw in the background. The FIRST `openclaw agent --local`
+# invocation installs bundled runtime deps for all 18 plugins (acpx,
+# amazon-bedrock, anthropic, browser, …) which takes ~60s on a cold
+# Mac. If we don't do this here, the user's first chat turn hits that
+# plugin-install window, overruns InlineRunner's 45s timeout, and
+# returns "Hmm, I'm not able to reach my brain right now" — exactly
+# the bug v3.10.22 was supposed to eliminate.
+#
+# Fire-and-forget: the install.sh doesn't wait for warmup to finish
+# (that would block the dashboard open and the "install complete"
+# message for a full minute). By the time the user clicks into the
+# Chief chat, plugins are cached and turns complete in ~10s.
+OPENCLAW_BIN="$INSTALL_DIR/openclaw/bin/openclaw"
+OPENCLAW_RUNTIME_BIN="$INSTALL_DIR/openclaw-runtime/bin"
+if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
+  echo "Warming up openclaw plugins in the background..."
+  WARMUP_LOG="${TMPDIR:-/tmp}/clawos-openclaw-warmup.log"
+  (
+    PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
+    nohup "$OPENCLAW_BIN" agent --local --agent main \
+      --session-id "mm-warmup-$$" \
+      --message "ping" \
+      --timeout 180 \
+      --json \
+      >"$WARMUP_LOG" 2>&1 </dev/null &
+    disown || true
+  )
+fi
+
 if [ "$AUTO_OPEN_DASHBOARD" = "true" ] && [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
   open "http://127.0.0.1:3200" || true
 fi
