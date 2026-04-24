@@ -152,11 +152,67 @@ rm -rf "$INSTALL_DIR/tmp/cache/bootsnap" 2>/dev/null || true
 rm -rf "$INSTALL_DIR/tmp/cache/assets" 2>/dev/null || true
 rm -rf "$INSTALL_DIR/public/assets" 2>/dev/null || true
 
-# Touch tmp/restart.txt so an already-running Puma picks up the new
-# source on the next request. Without this, the user would have to
-# manually quit-and-reopen the app for new Rails code to take effect.
+# Touch tmp/restart.txt for the tmp_restart plugin — but don't rely
+# on it. Belt-and-suspenders; the real fix is the hard stop below.
 mkdir -p "$INSTALL_DIR/tmp"
 touch "$INSTALL_DIR/tmp/restart.txt"
+
+# HARD-STOP any running puma + all of its forked children so the
+# AUTO_START block below can spawn a fresh puma with the new Rails
+# source from disk. Why this is required:
+#
+#   1. The tmp_restart plugin's mtime check misses replaced files
+#      (rsync writes a new inode; puma was watching the old one).
+#   2. SIGUSR2 is also unreliable — the Ruby class reloader can keep
+#      stale bytecode around for services that were `require`'d early.
+#   3. Puma's solid-queue workers INHERIT the port 3200 listen socket
+#      when they fork. If we only kill the puma master they keep the
+#      port, the installer's respawn attempt hits EADDRINUSE, and the
+#      user is stuck with a port held by worker processes that don't
+#      speak HTTP — the chat then returns the "can't reach my brain"
+#      fallback until the Mac app is fully quit and relaunched.
+#
+# Observed on v3.10.21 fresh install — this function is what prevents
+# that class of bug for every future install. Silent-fail throughout
+# because a cold install has nothing to kill, and that's fine.
+stop_running_puma() {
+  command -v lsof >/dev/null 2>&1 || return 0
+  local pids deadline pid
+  # `|| true` on every lsof/pipeline: the whole script runs under
+  # `set -euo pipefail` and lsof exits 1 when nothing matches, which
+  # would otherwise abort the installer before it even gets to the
+  # restart step. These are informational checks — non-zero is fine.
+  pids="$(lsof -iTCP:3200 -sTCP:LISTEN -t 2>/dev/null | sort -u || true)"
+  [ -z "$pids" ] && return 0
+  echo "Stopping puma + forked workers on port 3200 so new code loads..."
+  for pid in $pids; do
+    kill -TERM "$pid" 2>/dev/null || true
+  done
+  # Up to 10s for graceful exit.
+  deadline=$(( $(date +%s) + 10 ))
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    pids="$(lsof -iTCP:3200 -sTCP:LISTEN -t 2>/dev/null | sort -u || true)"
+    [ -z "$pids" ] && break
+    sleep 1
+  done
+  # Force-kill anything still holding the port (solid-queue workers
+  # often ignore SIGTERM under load).
+  pids="$(lsof -iTCP:3200 -sTCP:LISTEN -t 2>/dev/null | sort -u || true)"
+  for pid in $pids; do
+    kill -KILL "$pid" 2>/dev/null || true
+  done
+  # And sweep any orphaned solid-queue workers by command pattern,
+  # in case they weren't bound to port 3200.
+  pkill -TERM -f 'solid-queue' 2>/dev/null || true
+  sleep 1
+  pkill -KILL -f 'solid-queue' 2>/dev/null || true
+  # Final check: port must be free before we let install.sh continue.
+  pids="$(lsof -iTCP:3200 -sTCP:LISTEN -t 2>/dev/null | sort -u || true)"
+  if [ -n "$pids" ]; then
+    echo "WARNING: port 3200 still held by: $pids (install continuing, but puma restart may fail)" >&2
+  fi
+}
+stop_running_puma
 
 cd "$INSTALL_DIR"
 if [ ! -x "./bin/clawos" ]; then
@@ -194,8 +250,55 @@ echo "Running Margin Machines installer..."
 ./bin/clawos install
 
 if [ "$AUTO_START" = "true" ]; then
-  echo "Starting Margin Machines services..."
-  nohup ./bin/clawos start >"${TMPDIR:-/tmp}/clawos-start.log" 2>&1 &
+  echo "Starting Margin Machines web server..."
+
+  # Spawn puma directly — NOT via `./bin/clawos start`, which goes
+  # through foreman. Foreman exits (and tears down every child) as
+  # soon as ANY process in Procfile.dev exits with code 0, and
+  # `tailwindcss:watch` commonly finishes a one-shot pass and exits
+  # cleanly on install. That was silently killing the freshly-started
+  # puma right after install, leaving the user with the "can't reach
+  # my brain" fallback until they quit and relaunched the Mac app.
+  #
+  # config/puma.rb already embeds solid_queue via `plugin :solid_queue`
+  # and the Mac launcher uses this exact same command — so running
+  # puma directly gives us the same topology the launcher would
+  # produce, minus the foreman landmine.
+  PUMA_LOG="${TMPDIR:-/tmp}/clawos-puma.log"
+  (
+    cd "$INSTALL_DIR"
+    nohup env \
+      PORT=3200 \
+      RAILS_ENV=development \
+      CLAWOS_ALLOW_UNREADY_START=true \
+      PATH="$PATH" \
+      ${GEM_PATH:+GEM_PATH="$GEM_PATH"} \
+      ${GEM_HOME:+GEM_HOME="$GEM_HOME"} \
+      ${BUNDLE_APP_CONFIG:+BUNDLE_APP_CONFIG="$BUNDLE_APP_CONFIG"} \
+      ${BUNDLE_PATH:+BUNDLE_PATH="$BUNDLE_PATH"} \
+      ${BUNDLE_DISABLE_SHARED_GEMS:+BUNDLE_DISABLE_SHARED_GEMS="$BUNDLE_DISABLE_SHARED_GEMS"} \
+      bundle exec puma -C config/puma.rb \
+      >"$PUMA_LOG" 2>&1 </dev/null &
+    disown || true
+  )
+
+  # Wait for puma to actually accept HTTP — not just bind the port.
+  # Without this check install.sh returns "installation complete"
+  # before puma is serving, which hides startup failures from users.
+  READY=0
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
+           21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
+    if curl -fsS -m 2 -o /dev/null http://127.0.0.1:3200/ 2>/dev/null; then
+      READY=1
+      break
+    fi
+    sleep 1
+  done
+  if [ "$READY" = "1" ]; then
+    echo "Puma is up on http://127.0.0.1:3200"
+  else
+    echo "WARNING: Puma did not become ready within 40s. Check $PUMA_LOG" >&2
+  fi
 fi
 
 if [ "$AUTO_OPEN_DASHBOARD" = "true" ] && [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
