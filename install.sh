@@ -152,6 +152,26 @@ rm -rf "$INSTALL_DIR/tmp/cache/bootsnap" 2>/dev/null || true
 rm -rf "$INSTALL_DIR/tmp/cache/assets" 2>/dev/null || true
 rm -rf "$INSTALL_DIR/public/assets" 2>/dev/null || true
 
+# Strip macOS quarantine xattrs from the freshly-extracted openclaw
+# tree. Native node addons (`*.node`: clipboard, sharp, koffi,
+# pty.node, etc.) inherit `com.apple.quarantine` from the Chrome /
+# Safari download path of the DMG; when openclaw tries to `dlopen`
+# them the kernel raises a Gatekeeper alert ("clipboard.darwin-
+# universal.node Not Opened") and the plugin load fails. Stripping
+# the xattr lets dlopen succeed.
+#
+# We only sweep the openclaw and openclaw-runtime trees — those are
+# what we just unpacked from the DMG and what contains the .node
+# addons. Don't touch ~/.clawos/runtime (Ruby gems already work, and
+# the gem files are owned by the codesigning user with permission
+# bits that block `xattr` writes).
+echo "Stripping macOS quarantine xattrs from openclaw runtime..."
+if command -v xattr >/dev/null 2>&1; then
+  for d in "$INSTALL_DIR/openclaw" "$INSTALL_DIR/openclaw-runtime"; do
+    [ -d "$d" ] && xattr -cr "$d" 2>/dev/null || true
+  done
+fi
+
 # Touch tmp/restart.txt for the tmp_restart plugin — but don't rely
 # on it. Belt-and-suspenders; the real fix is the hard stop below.
 mkdir -p "$INSTALL_DIR/tmp"
@@ -338,18 +358,67 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
       -exec rm -rf {} + 2>/dev/null || true
   fi
 
-  echo "Warming up openclaw plugins in the background..."
+  # Make sure the openclaw-gateway service is running before warmup.
+  # The Mac launcher normally starts it, but install.sh can run before
+  # the launcher's gateway is up (or after we just restarted puma).
+  # `gateway start` is idempotent — it no-ops if a service is already
+  # running on the bind port.
+  echo "Ensuring openclaw gateway is running..."
+  PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
+    "$OPENCLAW_BIN" gateway start >/dev/null 2>&1 || true
+  # Brief wait for the gateway to bind its port. 18789 is the default.
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if [ -n "$(lsof -iTCP:18789 -sTCP:LISTEN -t 2>/dev/null || true)" ]; then break; fi
+    sleep 1
+  done
+
+  # Warmup turn through the GATEWAY (not `--local`). The gateway is
+  # already loaded — turns finish in ~10–12s. Switching to `--local`
+  # for warmup, as we did before, took 60–180s on openclaw 2026.4.24+
+  # because every `agent --local` invocation re-spawns node and
+  # re-loads ALL 76 plugins from disk. Through the gateway, plugins
+  # are loaded once at gateway start and reused per turn.
+  #
+  # Block synchronously with a 60s deadline so install.sh exits only
+  # when chat is actually serviceable. If warmup somehow fails we
+  # warn but proceed — the user can retry; we shouldn't ever hang
+  # the installer indefinitely on a flaky openclaw.
+  echo "Warming up openclaw via gateway..."
   WARMUP_LOG="${TMPDIR:-/tmp}/clawos-openclaw-warmup.log"
+  WARMUP_DEADLINE_SECONDS=60
   (
     PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
-    nohup "$OPENCLAW_BIN" agent --local --agent main \
+    "$OPENCLAW_BIN" agent --agent main \
       --session-id "mm-warmup-$$" \
       --message "ping" \
-      --timeout 300 \
+      --timeout 60 \
       --json \
       >"$WARMUP_LOG" 2>&1 </dev/null &
-    disown || true
-  )
+  ) &
+
+  # Gateway responses end with `"summary": "completed"` at the top
+  # level when the turn finishes successfully. The older `--local`
+  # path emits `"finalAssistantVisibleText"` instead — match either
+  # so this works no matter which code path the warmup ends up on.
+  WARMUP_OK=0
+  for s in $(seq 1 "$WARMUP_DEADLINE_SECONDS"); do
+    if [ -s "$WARMUP_LOG" ] && grep -qE '"summary"[[:space:]]*:[[:space:]]*"completed"|"finalAssistantVisibleText"' "$WARMUP_LOG" 2>/dev/null; then
+      WARMUP_OK=1
+      echo "openclaw is ready after ${s}s."
+      break
+    fi
+    if grep -q 'PluginLoadFailureError\|Failed to start CLI' "$WARMUP_LOG" 2>/dev/null; then
+      echo "WARNING: openclaw plugin load reported failure. Tail of $WARMUP_LOG:" >&2
+      tail -20 "$WARMUP_LOG" >&2 || true
+      break
+    fi
+    sleep 1
+  done
+
+  if [ "$WARMUP_OK" != "1" ]; then
+    echo "WARNING: openclaw warmup did not finish within ${WARMUP_DEADLINE_SECONDS}s." >&2
+    echo "         The first chat may take longer than usual; check $WARMUP_LOG" >&2
+  fi
 fi
 
 if [ "$AUTO_OPEN_DASHBOARD" = "true" ] && [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
