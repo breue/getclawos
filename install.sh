@@ -306,16 +306,38 @@ fi
 # amazon-bedrock, anthropic, browser, …) which takes ~60s on a cold
 # Mac. If we don't do this here, the user's first chat turn hits that
 # plugin-install window, overruns InlineRunner's 45s timeout, and
-# returns "Hmm, I'm not able to reach my brain right now" — exactly
-# the bug v3.10.22 was supposed to eliminate.
+# returns "Hmm, I'm not able to reach my brain right now".
 #
-# Fire-and-forget: the install.sh doesn't wait for warmup to finish
-# (that would block the dashboard open and the "install complete"
-# message for a full minute). By the time the user clicks into the
-# Chief chat, plugins are cached and turns complete in ~10s.
+# Fire-and-forget: the install.sh doesn't wait for warmup to finish.
+# By the time the user clicks into Chief chat, plugins are cached and
+# turns complete in ~10s.
 OPENCLAW_BIN="$INSTALL_DIR/openclaw/bin/openclaw"
 OPENCLAW_RUNTIME_BIN="$INSTALL_DIR/openclaw-runtime/bin"
+EXT_DIR="$INSTALL_DIR/openclaw/lib/node_modules/openclaw/dist/extensions"
 if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
+  # Wipe leftover plugin-install staging artifacts before we kick off
+  # warmup. openclaw's plugin installer uses npm's atomic-rename
+  # pattern: stages deps into `<plugin>/.openclaw-install-stage/
+  # node_modules`, then renames into `<plugin>/node_modules`. If a
+  # previous install was interrupted (SIGKILL from InlineRunner's 45s
+  # timeout, app force-quit, sleep, etc.) the staging dir is left on
+  # disk in a half-written state. The NEXT install hits ENOTEMPTY on
+  # rename/rmdir, npm bails, openclaw's `loadOpenClawPlugins` raises
+  # `PluginLoadFailureError: plugin load failed: anthropic`, and the
+  # CLI exits before serving any chat turn. Every subsequent user
+  # message returns "can't reach my brain" until the staging dirs are
+  # cleared by hand.
+  #
+  # Observed on user upgrade across v3.10.21 → .22 → .23 — partial
+  # plugin state from the v3.10.21 install (which timed out before
+  # finishing) blocked all later installs. Sweep these every install
+  # so plugin install always starts from a clean slate.
+  if [ -d "$EXT_DIR" ]; then
+    find "$EXT_DIR" -maxdepth 2 -type d \
+      \( -name ".openclaw-install-stage" -o -name ".openclaw-runtime-deps-copy-*" \) \
+      -exec rm -rf {} + 2>/dev/null || true
+  fi
+
   echo "Warming up openclaw plugins in the background..."
   WARMUP_LOG="${TMPDIR:-/tmp}/clawos-openclaw-warmup.log"
   (
@@ -323,7 +345,7 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
     nohup "$OPENCLAW_BIN" agent --local --agent main \
       --session-id "mm-warmup-$$" \
       --message "ping" \
-      --timeout 180 \
+      --timeout 300 \
       --json \
       >"$WARMUP_LOG" 2>&1 </dev/null &
     disown || true
