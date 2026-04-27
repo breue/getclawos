@@ -559,28 +559,38 @@ fi
 # port 18789), which doesn't catch the case where the gateway is up
 # but openclaw can't load a plugin, or InlineRunner can't reach the
 # gateway, or Anthropic times out. This probe exercises the full path.
-echo
-echo "── DIAG [chat-health-probe] ──"
-CHAT_PROBE_START=$(date +%s)
-CHAT_PROBE_RESPONSE="$(curl -fsS -m 30 -X POST \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"installer chat-health probe — please reply with one short sentence"}' \
-  http://127.0.0.1:3200/play/chat 2>&1 || true)"
-CHAT_PROBE_ELAPSED=$(( $(date +%s) - CHAT_PROBE_START ))
-if echo "$CHAT_PROBE_RESPONSE" | grep -q '"ok":true' && \
-   ! echo "$CHAT_PROBE_RESPONSE" | grep -q "not able to reach my brain"; then
-  echo "  result:                   PASS (${CHAT_PROBE_ELAPSED}s)"
-  echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 180)"
-elif echo "$CHAT_PROBE_RESPONSE" | grep -q "not able to reach my brain"; then
-  echo "  result:                   FAIL — fallback message returned (${CHAT_PROBE_ELAPSED}s)"
-  echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 180)"
-elif [ -z "$CHAT_PROBE_RESPONSE" ] || echo "$CHAT_PROBE_RESPONSE" | grep -qi 'curl.*timed out'; then
-  echo "  result:                   FAIL — curl timed out at ${CHAT_PROBE_ELAPSED}s (puma or InlineRunner stalled)"
-else
-  echo "  result:                   FAIL — unexpected response shape (${CHAT_PROBE_ELAPSED}s)"
-  echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 200)"
+#
+# IMPORTANT: only run when AUTO_START=true. The Mac launcher passes
+# CLAWOS_AUTO_START=false and starts puma + the gateway *itself*
+# AFTER install.sh exits. Running the probe inside the launcher-
+# driven flow always fails with `curl: (7) Failed to connect` —
+# confusing noise in the Heroku log column. Direct curl|bash users
+# DO want this probe (their AUTO_START block is what just spun
+# puma up, so the probe is meaningful).
+if [ "$AUTO_START" = "true" ]; then
+  echo
+  echo "── DIAG [chat-health-probe] ──"
+  CHAT_PROBE_START=$(date +%s)
+  CHAT_PROBE_RESPONSE="$(curl -fsS -m 30 -X POST \
+    -H 'Content-Type: application/json' \
+    -d '{"message":"installer chat-health probe — please reply with one short sentence"}' \
+    http://127.0.0.1:3200/play/chat 2>&1 || true)"
+  CHAT_PROBE_ELAPSED=$(( $(date +%s) - CHAT_PROBE_START ))
+  if echo "$CHAT_PROBE_RESPONSE" | grep -q '"ok":true' && \
+     ! echo "$CHAT_PROBE_RESPONSE" | grep -q "not able to reach my brain"; then
+    echo "  result:                   PASS (${CHAT_PROBE_ELAPSED}s)"
+    echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 180)"
+  elif echo "$CHAT_PROBE_RESPONSE" | grep -q "not able to reach my brain"; then
+    echo "  result:                   FAIL — fallback message returned (${CHAT_PROBE_ELAPSED}s)"
+    echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 180)"
+  elif [ -z "$CHAT_PROBE_RESPONSE" ] || echo "$CHAT_PROBE_RESPONSE" | grep -qi 'curl.*timed out'; then
+    echo "  result:                   FAIL — curl timed out at ${CHAT_PROBE_ELAPSED}s (puma or InlineRunner stalled)"
+  else
+    echo "  result:                   FAIL — unexpected response shape (${CHAT_PROBE_ELAPSED}s)"
+    echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 200)"
+  fi
+  echo "── END DIAG [chat-health-probe] ──"
 fi
-echo "── END DIAG [chat-health-probe] ──"
 
 # Final state-of-the-world snapshot. With this, even if a future user
 # reports "chat doesn't work", we can read everything we'd need from
