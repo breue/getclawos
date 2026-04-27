@@ -549,9 +549,13 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
   # the launcher's gateway is up (or after we just restarted puma).
   # `gateway start` is idempotent — it no-ops if a service is already
   # running on the bind port.
+  # v3.10.35 — `--profile margin-machines` isolates state under
+  # ~/.openclaw-margin-machines/ so no pre-existing user openclaw
+  # state pollutes our gateway. See LauncherModel.openclawProfile
+  # for the full rationale.
   echo "Ensuring openclaw gateway is running..."
   PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
-    "$OPENCLAW_BIN" gateway start >/dev/null 2>&1 || true
+    "$OPENCLAW_BIN" --profile margin-machines gateway start >/dev/null 2>&1 || true
   # Brief wait for the gateway to bind its port. 18789 is the default.
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     if [ -n "$(lsof -iTCP:18789 -sTCP:LISTEN -t 2>/dev/null || true)" ]; then break; fi
@@ -578,7 +582,7 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
   WARMUP_DEADLINE_SECONDS=60
   (
     PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
-    "$OPENCLAW_BIN" agent --agent main \
+    "$OPENCLAW_BIN" --profile margin-machines agent --agent main \
       --session-id "mm-warmup-$$" \
       --message "ping" \
       --timeout 60 \
