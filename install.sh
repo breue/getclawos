@@ -430,20 +430,54 @@ if [ -x "$BUNDLED_OPENCLAW_BIN/openclaw" ]; then
   if command -v lsof >/dev/null 2>&1; then
     OLD_GW_PIDS="$(lsof -iTCP:18789 -sTCP:LISTEN -t 2>/dev/null | sort -u | tr '\n' ' ' || true)"
     if [ -n "$OLD_GW_PIDS" ]; then
+      # v3.10.36 — read the bundled openclaw.mjs's mtime ONCE, before
+      # the loop. We compare each gateway PID's start time against this:
+      # a PID that started before mjs mtime is running pre-extraction
+      # code, even when its node binary still lives under $INSTALL_DIR.
+      # That's the bug we kept tripping on: an "ours" gateway from a
+      # PREVIOUS MM install survived the upgrade, the v3.10.34 ownership
+      # check left it alone, and Rails ended up talking to old code that
+      # didn't recognize the new agent params.
+      BUNDLED_MJS="$INSTALL_DIR/openclaw/lib/node_modules/openclaw/openclaw.mjs"
+      MJS_MTIME=""
+      if [ -f "$BUNDLED_MJS" ]; then
+        MJS_MTIME="$(stat -f %m "$BUNDLED_MJS" 2>/dev/null || true)"
+      fi
+
       KILL_PIDS=""
       for pid in $OLD_GW_PIDS; do
         node_path="$(lsof -p "$pid" 2>/dev/null | awk '$4 == "txt" && $NF ~ /\/node$/ {print $NF; exit}')"
         # Prefix-strip $INSTALL_DIR/. If $node_path started with it,
         # the strip changes the value; if it didn't, the value stays
         # the same. This is POSIX-clean and handles paths with spaces.
+        is_bundled_path=0
         if [ -n "$node_path" ] && [ "${node_path#$INSTALL_DIR/}" != "$node_path" ]; then
+          is_bundled_path=1
+        fi
+
+        is_stale=0
+        if [ "$is_bundled_path" = "1" ] && [ -n "$MJS_MTIME" ]; then
+          gw_lstart="$(ps -o lstart= -p "$pid" 2>/dev/null || true)"
+          gw_start_epoch=""
+          if [ -n "$gw_lstart" ]; then
+            gw_start_epoch="$(date -j -f "%a %b %e %T %Y" "$gw_lstart" "+%s" 2>/dev/null || true)"
+          fi
+          if [ -n "$gw_start_epoch" ] && [ "$gw_start_epoch" -lt "$((MJS_MTIME - 60))" ]; then
+            is_stale=1
+          fi
+        fi
+
+        if [ "$is_bundled_path" = "1" ] && [ "$is_stale" = "0" ]; then
           echo "  Bundled gateway already running on 18789 (pid $pid, node=$node_path) — leaving it"
+        elif [ "$is_bundled_path" = "1" ] && [ "$is_stale" = "1" ]; then
+          echo "  Bundled but STALE gateway on 18789 (pid $pid started before openclaw.mjs was extracted) — replacing"
+          KILL_PIDS="$KILL_PIDS $pid"
         else
           KILL_PIDS="$KILL_PIDS $pid"
         fi
       done
       if [ -n "$KILL_PIDS" ]; then
-        echo "  Killing non-bundled gateway on 18789:$KILL_PIDS"
+        echo "  Killing gateway on 18789:$KILL_PIDS"
         kill -TERM $KILL_PIDS 2>/dev/null || true
         sleep 1
         kill -KILL $KILL_PIDS 2>/dev/null || true
