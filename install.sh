@@ -578,6 +578,38 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
       -exec rm -rf {} + 2>/dev/null || true
   fi
 
+  # v3.10.37 — strip stale agents.defaults keys from openclaw.json
+  # before any `openclaw gateway` invocation. openclaw 2026.4.25
+  # rejects `contextInjection`, `experimental`, and `startupContext`
+  # under agents.defaults (Unrecognized keys), and `gateway run`
+  # exits before binding even with --allow-unconfigured. Earlier
+  # openclaw versions wrote those keys during onboarding, so any
+  # user upgrading from openclaw <2026.4.x has a poisoned config
+  # that blocks gateway start. The error message tells the user to
+  # run `openclaw doctor --fix`, but doctor empirically does not
+  # strip these keys (verified against 2026.4.25 — it covers other
+  # repairs only). Heroku install_ids ADB2339A + 33F971F8 both
+  # bombed at the bootstrap step waiting for a gateway that could
+  # never start. Fix: surgical strip via a tiny inline Ruby pass.
+  PROFILE_CONFIG="$HOME/.openclaw-margin-machines/openclaw.json"
+  RUBY_BIN="$INSTALL_DIR/runtime/bin/ruby"
+  if [ -f "$PROFILE_CONFIG" ] && [ -x "$RUBY_BIN" ]; then
+    "$RUBY_BIN" -rjson -e '
+      path = ARGV[0]
+      cfg = JSON.parse(File.read(path)) rescue nil
+      exit 0 unless cfg.is_a?(Hash)
+      defaults = cfg.dig("agents", "defaults")
+      exit 0 unless defaults.is_a?(Hash)
+      stripped = []
+      %w[contextInjection experimental startupContext].each do |k|
+        stripped << k if defaults.delete(k)
+      end
+      next if stripped.empty?
+      File.write(path, JSON.pretty_generate(cfg))
+      warn "  Stripped openclaw config keys rejected by 2026.4.x schema: #{stripped.join(", ")}."
+    ' "$PROFILE_CONFIG" || true
+  fi
+
   # Make sure the openclaw-gateway service is running before warmup.
   # The Mac launcher normally starts it, but install.sh can run before
   # the launcher's gateway is up (or after we just restarted puma).
