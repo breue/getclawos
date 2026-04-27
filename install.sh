@@ -409,13 +409,45 @@ BUNDLED_OPENCLAW_BIN="$INSTALL_DIR/openclaw/bin"
 if [ -x "$BUNDLED_OPENCLAW_BIN/openclaw" ]; then
   export PATH="$BUNDLED_OPENCLAW_BIN:$PATH"
   echo "  Pinned openclaw CLI to bundled $BUNDLED_OPENCLAW_BIN/openclaw"
+  # v3.10.34 — only kill an existing gateway on 18789 if it's NOT
+  # the bundled one. v3.10.32 killed unconditionally, which on a
+  # normal install path SIGKILL'd the bundled gateway the launcher
+  # had just started (Heroku install_id A42DB77D — install.sh killed
+  # the launcher's bundled gateway, then install_local tried to
+  # restart it via the wrong CLI [Homebrew, due to PATH bug A]).
+  # The previous gateway then either failed to come back or came
+  # back as the wrong version, warmup timed out at 300s, install
+  # bombed at the bootstrap step.
+  #
+  # Surgical ownership detection. The gateway process renames its argv
+  # to just "openclaw-gateway" (no path), so `ps args=` is useless for
+  # telling whose gateway it is. Instead, read the loaded `node` binary
+  # via `lsof -p PID` (the `txt` entries list executable images and
+  # mapped libraries). If node lives under $INSTALL_DIR/, the launcher
+  # spawned it with our bundled openclaw-runtime — leave it alone. If
+  # it's anywhere else (Homebrew, nvm, global npm), kill it so the
+  # bundled CLI's gateway-start can take over with a known version.
   if command -v lsof >/dev/null 2>&1; then
     OLD_GW_PIDS="$(lsof -iTCP:18789 -sTCP:LISTEN -t 2>/dev/null | sort -u | tr '\n' ' ' || true)"
     if [ -n "$OLD_GW_PIDS" ]; then
-      echo "  Killing pre-existing gateway on 18789: $OLD_GW_PIDS"
-      kill -TERM $OLD_GW_PIDS 2>/dev/null || true
-      sleep 1
-      kill -KILL $OLD_GW_PIDS 2>/dev/null || true
+      KILL_PIDS=""
+      for pid in $OLD_GW_PIDS; do
+        node_path="$(lsof -p "$pid" 2>/dev/null | awk '$4 == "txt" && $NF ~ /\/node$/ {print $NF; exit}')"
+        # Prefix-strip $INSTALL_DIR/. If $node_path started with it,
+        # the strip changes the value; if it didn't, the value stays
+        # the same. This is POSIX-clean and handles paths with spaces.
+        if [ -n "$node_path" ] && [ "${node_path#$INSTALL_DIR/}" != "$node_path" ]; then
+          echo "  Bundled gateway already running on 18789 (pid $pid, node=$node_path) — leaving it"
+        else
+          KILL_PIDS="$KILL_PIDS $pid"
+        fi
+      done
+      if [ -n "$KILL_PIDS" ]; then
+        echo "  Killing non-bundled gateway on 18789:$KILL_PIDS"
+        kill -TERM $KILL_PIDS 2>/dev/null || true
+        sleep 1
+        kill -KILL $KILL_PIDS 2>/dev/null || true
+      fi
     fi
   fi
 fi
