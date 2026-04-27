@@ -388,6 +388,38 @@ else
   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null
 fi
 
+# v3.10.32 — pin openclaw to the bundled binary on PATH BEFORE invoking
+# install_local. Without this, a user who has Homebrew's openclaw on PATH
+# (`/opt/homebrew/bin/openclaw`) gets that older version used by:
+#   - scripts/lib/openclaw_bootstrap.sh ensure_openclaw_cli (PATH lookup)
+#   - scripts/lib/openclaw_bootstrap.sh ensure_openclaw_gateway (PATH lookup
+#     for `openclaw gateway start`)
+#   - scripts/setup_wizard's `openclaw onboard --auth-choice anthropic-api-key`
+# Then later, install.sh's own bundled `openclaw gateway start` no-ops because
+# the Homebrew gateway is already running on 18789. Rails ends up calling
+# the bundled CLI v2026.4.25 against the older Homebrew gateway, the CLI
+# sends `cleanupBundleMcpOnRunEnd` which the older gateway rejects with
+# `INVALID_REQUEST: invalid agent params`, and chat returns "Could not
+# process message". Heroku install_id A79174EC was the first time we caught
+# this in the wild — previously it was masked by the v3.10.30 model-pin bug.
+#
+# Also kill any pre-existing openclaw-gateway on 18789 so an old gateway
+# from a prior install (Homebrew or otherwise) can't survive into ours.
+BUNDLED_OPENCLAW_BIN="$INSTALL_DIR/openclaw/bin"
+if [ -x "$BUNDLED_OPENCLAW_BIN/openclaw" ]; then
+  export PATH="$BUNDLED_OPENCLAW_BIN:$PATH"
+  echo "  Pinned openclaw CLI to bundled $BUNDLED_OPENCLAW_BIN/openclaw"
+  if command -v lsof >/dev/null 2>&1; then
+    OLD_GW_PIDS="$(lsof -iTCP:18789 -sTCP:LISTEN -t 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+    if [ -n "$OLD_GW_PIDS" ]; then
+      echo "  Killing pre-existing gateway on 18789: $OLD_GW_PIDS"
+      kill -TERM $OLD_GW_PIDS 2>/dev/null || true
+      sleep 1
+      kill -KILL $OLD_GW_PIDS 2>/dev/null || true
+    fi
+  fi
+fi
+
 echo "Running Margin Machines installer..."
 ./bin/clawos install
 
