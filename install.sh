@@ -26,6 +26,123 @@ require_cmd tar
 require_cmd awk
 
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.clawos}"
+
+# ── Diagnostic helpers (everything they print streams to Heroku via
+# the launcher's install.log telemetry) ────────────────────────────
+#
+# These exist because install hangs on virgin Macs (no Xcode, no
+# Homebrew, no Node/Bundler) leave us blind on the platform side: the
+# install_runs row freezes at "deps_installing" with no log entries
+# past the last shell echo. Every checkpoint below dumps a short,
+# secret-redacted block of state so a stalled install still gives us
+# enough to diagnose remotely without a back-and-forth with the user.
+
+# Pull a tail of a file and prefix each line with "  " so it nests
+# nicely inside the labeled section. Silent on missing files.
+diag_tail() {
+  local path="$1" lines="${2:-20}"
+  if [ -r "$path" ]; then
+    tail -n "$lines" "$path" 2>/dev/null \
+      | grep -vE 'ANTHROPIC_API_KEY|OPENAI_API_KEY|MM_LICENSE_KEY|^sub_[A-Za-z0-9]+' \
+      | sed 's/^/  /'
+  fi
+}
+
+diag_block_processes() {
+  echo "  -- processes --"
+  ps -eo pid,etime,command 2>/dev/null \
+    | awk '/puma.*clawos|openclaw|ClawOSLauncher/ && !/awk/ {print "  ", $0}' \
+    | head -8
+}
+
+diag_block_ports() {
+  echo "  -- listen ports --"
+  for port in 3200 18789; do
+    pid="$(lsof -iTCP:$port -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
+    if [ -n "$pid" ]; then
+      echo "    $port: PID $pid"
+    else
+      echo "    $port: free"
+    fi
+  done
+}
+
+diag_block_plugins() {
+  local ext="$INSTALL_DIR/openclaw/lib/node_modules/openclaw/dist/extensions"
+  local nm="$INSTALL_DIR/openclaw/lib/node_modules/openclaw/node_modules"
+  echo "  -- openclaw plugin state --"
+  if [ -d "$nm/@anthropic-ai/sdk" ]; then
+    echo "    @anthropic-ai/sdk:        present (good)"
+  else
+    echo "    @anthropic-ai/sdk:        MISSING — openclaw can't reach Claude"
+  fi
+  local stale="$(find "$ext" -maxdepth 2 -type d \
+    \( -name '.openclaw-install-stage' -o -name '.openclaw-runtime-deps-copy-*' \) \
+    2>/dev/null | wc -l | tr -d ' ')"
+  echo "    stale staging dirs:       $stale"
+  local node_count=0
+  if [ -d "$ext" ]; then
+    node_count="$(ls "$ext" 2>/dev/null | wc -l | tr -d ' ')"
+  fi
+  echo "    extensions visible:       $node_count"
+}
+
+diag_block_xattrs() {
+  local sample="$INSTALL_DIR/openclaw/lib/node_modules/openclaw/node_modules/@mariozechner/clipboard-darwin-universal/clipboard.darwin-universal.node"
+  if [ -f "$sample" ]; then
+    local x="$(xattr -l "$sample" 2>/dev/null | head -1 || true)"
+    echo "  -- quarantine xattrs --"
+    if [ -z "$x" ]; then
+      echo "    sample .node:             clean"
+    else
+      echo "    sample .node:             STILL QUARANTINED — Gatekeeper will block"
+      echo "    detail:                   $x"
+    fi
+  fi
+}
+
+diag_block_recent_turns() {
+  local db="$INSTALL_DIR/storage/development.sqlite3"
+  if [ -r "$db" ] && command -v sqlite3 >/dev/null 2>&1; then
+    echo "  -- recent openclaw_turns --"
+    sqlite3 "$db" "SELECT id, datetime(created_at,'localtime'), agent_name, outcome, duration_ms, response_chars FROM openclaw_turns ORDER BY id DESC LIMIT 5" 2>/dev/null \
+      | sed 's/^/    /' || true
+  fi
+}
+
+# Print a labeled diagnostic checkpoint. Caller chooses which sub-blocks
+# matter at this point in the install. Each block silently no-ops when
+# the underlying state isn't there yet (e.g. plugins before extraction).
+emit_diag_checkpoint() {
+  local label="$1"; shift
+  echo
+  echo "── DIAG [$label] ──"
+  for block in "$@"; do
+    case "$block" in
+      processes)    diag_block_processes ;;
+      ports)        diag_block_ports ;;
+      plugins)      diag_block_plugins ;;
+      xattrs)       diag_block_xattrs ;;
+      turns)        diag_block_recent_turns ;;
+      gateway-log)  echo "  -- gateway.log tail --"
+                    diag_tail "$INSTALL_DIR/logs/gateway.log" 25 ;;
+      rails-log)    echo "  -- rails dev.log tail --"
+                    diag_tail "$INSTALL_DIR/log/development.log" 25 ;;
+      warmup-log)   echo "  -- warmup log tail --"
+                    diag_tail "${TMPDIR:-/tmp}/clawos-openclaw-warmup.log" 25 ;;
+      puma-log)     echo "  -- puma boot log tail --"
+                    diag_tail "${TMPDIR:-/tmp}/clawos-puma.log" 25 ;;
+      disk)         echo "  -- disk --"
+                    df -h "$INSTALL_DIR" 2>/dev/null | tail -1 | sed 's/^/  /' ;;
+      net)          echo "  -- network --"
+                    curl -sS -o /dev/null -w "    github.com:        HTTP=%{http_code} time=%{time_total}s\n" -m 5 https://github.com 2>&1 || true
+                    curl -sS -o /dev/null -w "    api.anthropic.com: HTTP=%{http_code} time=%{time_total}s\n" -m 5 https://api.anthropic.com 2>&1 || true ;;
+    esac
+  done
+  echo "── END DIAG [$label] ──"
+}
+# ── End diagnostic helpers ─────────────────────────────────────────
+
 RELEASE_CHANNEL="${CLAWOS_RELEASE_CHANNEL:-stable}"
 MANIFEST_URL="${CLAWOS_MANIFEST_URL:-https://raw.githubusercontent.com/breue/getclawos/main/releases/${RELEASE_CHANNEL}/latest.env}"
 AUTO_START="${CLAWOS_AUTO_START:-true}"
@@ -171,6 +288,11 @@ if command -v xattr >/dev/null 2>&1; then
     [ -d "$d" ] && xattr -cr "$d" 2>/dev/null || true
   done
 fi
+
+# Diagnostic snapshot right after extraction + xattr strip. If a user's
+# install hangs further down, the platform record at least has a clear
+# baseline of what landed on disk.
+emit_diag_checkpoint "post-extract" plugins xattrs disk
 
 # Touch tmp/restart.txt for the tmp_restart plugin — but don't rely
 # on it. Belt-and-suspenders; the real fix is the hard stop below.
@@ -372,6 +494,10 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
     sleep 1
   done
 
+  # Diagnostic snapshot before warmup so we know what state the user's
+  # machine was in when warmup either succeeded or stalled.
+  emit_diag_checkpoint "pre-warmup" plugins ports processes
+
   # Warmup turn through the GATEWAY (not `--local`). The gateway is
   # already loaded — turns finish in ~10–12s. Switching to `--local`
   # for warmup, as we did before, took 60–180s on openclaw 2026.4.24+
@@ -418,8 +544,49 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
   if [ "$WARMUP_OK" != "1" ]; then
     echo "WARNING: openclaw warmup did not finish within ${WARMUP_DEADLINE_SECONDS}s." >&2
     echo "         The first chat may take longer than usual; check $WARMUP_LOG" >&2
+    # Failure path needs more diagnostics, including log tails, since
+    # we'll otherwise be diagnosing this from Heroku with nothing else.
+    emit_diag_checkpoint "warmup-failed" warmup-log gateway-log puma-log processes ports plugins net
+  else
+    emit_diag_checkpoint "warmup-ok" warmup-log turns
   fi
 fi
+
+# End-to-end chat-health probe: this is the canonical "would the user's
+# next chat work?" check. We hit the same Rails endpoint the WKWebView
+# UI calls, with a short timeout, and report the result. The launcher's
+# end-state probe only checks `gateway_reachable: true` (HTTP probe of
+# port 18789), which doesn't catch the case where the gateway is up
+# but openclaw can't load a plugin, or InlineRunner can't reach the
+# gateway, or Anthropic times out. This probe exercises the full path.
+echo
+echo "── DIAG [chat-health-probe] ──"
+CHAT_PROBE_START=$(date +%s)
+CHAT_PROBE_RESPONSE="$(curl -fsS -m 30 -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"installer chat-health probe — please reply with one short sentence"}' \
+  http://127.0.0.1:3200/play/chat 2>&1 || true)"
+CHAT_PROBE_ELAPSED=$(( $(date +%s) - CHAT_PROBE_START ))
+if echo "$CHAT_PROBE_RESPONSE" | grep -q '"ok":true' && \
+   ! echo "$CHAT_PROBE_RESPONSE" | grep -q "not able to reach my brain"; then
+  echo "  result:                   PASS (${CHAT_PROBE_ELAPSED}s)"
+  echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 180)"
+elif echo "$CHAT_PROBE_RESPONSE" | grep -q "not able to reach my brain"; then
+  echo "  result:                   FAIL — fallback message returned (${CHAT_PROBE_ELAPSED}s)"
+  echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 180)"
+elif [ -z "$CHAT_PROBE_RESPONSE" ] || echo "$CHAT_PROBE_RESPONSE" | grep -qi 'curl.*timed out'; then
+  echo "  result:                   FAIL — curl timed out at ${CHAT_PROBE_ELAPSED}s (puma or InlineRunner stalled)"
+else
+  echo "  result:                   FAIL — unexpected response shape (${CHAT_PROBE_ELAPSED}s)"
+  echo "  reply (truncated):        $(echo "$CHAT_PROBE_RESPONSE" | head -c 200)"
+fi
+echo "── END DIAG [chat-health-probe] ──"
+
+# Final state-of-the-world snapshot. With this, even if a future user
+# reports "chat doesn't work", we can read everything we'd need from
+# the Heroku installation_runs.log column without asking them to run
+# anything in their terminal.
+emit_diag_checkpoint "final" processes ports plugins xattrs turns warmup-log gateway-log rails-log puma-log
 
 if [ "$AUTO_OPEN_DASHBOARD" = "true" ] && [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
   open "http://127.0.0.1:3200" || true
