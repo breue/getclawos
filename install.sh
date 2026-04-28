@@ -42,9 +42,17 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/.clawos}"
 diag_tail() {
   local path="$1" lines="${2:-20}"
   if [ -r "$path" ]; then
+    # `|| true` is critical here. install.sh runs under
+    # `set -euo pipefail`, and `grep -v PATTERN` returns exit 1 when
+    # NO lines pass through (which happens whenever the file is
+    # empty — e.g., the warmup log when the gateway timed out before
+    # writing anything). Without `|| true`, the empty file path
+    # killed install.sh mid-diagnostic-dump and Falon's v3.10.40
+    # install bombed at "Bootstrapping failed" with no useful tail.
+    # See Heroku install_id 68C48322 (2026-04-28 11:48 UTC).
     tail -n "$lines" "$path" 2>/dev/null \
       | grep -vE 'ANTHROPIC_API_KEY|OPENAI_API_KEY|MM_LICENSE_KEY|^sub_[A-Za-z0-9]+' \
-      | sed 's/^/  /'
+      | sed 's/^/  /' || true
   fi
 }
 
@@ -604,7 +612,7 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
       %w[contextInjection experimental startupContext].each do |k|
         stripped << k if defaults.delete(k)
       end
-      next if stripped.empty?
+      exit 0 if stripped.empty?
       File.write(path, JSON.pretty_generate(cfg))
       warn "  Stripped openclaw config keys rejected by 2026.4.x schema: #{stripped.join(", ")}."
     ' "$PROFILE_CONFIG" || true
@@ -645,7 +653,17 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
   # the installer indefinitely on a flaky openclaw.
   echo "Warming up openclaw via gateway..."
   WARMUP_LOG="${TMPDIR:-/tmp}/clawos-openclaw-warmup.log"
-  WARMUP_DEADLINE_SECONDS=60
+  # v3.10.42 — bumped 60s → 180s. On bare machines (no Homebrew/Xcode/
+  # Node prior installed), the gateway's first run stages 9 npm runtime
+  # deps for plugins (playwright-core, @modelcontextprotocol/sdk,
+  # @homebridge/ciao, etc.) plus loads channels and sidecars. Local
+  # timing on a warm machine: gateway responds to /health in 40–44s.
+  # On Falon's bare macOS 15.7.4 install (Heroku 68C48322), the
+  # warmup never produced output before the 60s deadline, the warmup
+  # log was empty, and install.sh's diag_tail crashed under set -euo
+  # pipefail (separately fixed). 180s gives ~3× headroom and is still
+  # a reasonable wait for a one-time install step.
+  WARMUP_DEADLINE_SECONDS=180
   (
     PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
     "$OPENCLAW_BIN" --profile margin-machines agent --agent main \
