@@ -636,72 +636,19 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
     sleep 1
   done
 
-  # Diagnostic snapshot before warmup so we know what state the user's
-  # machine was in when warmup either succeeded or stalled.
-  emit_diag_checkpoint "pre-warmup" plugins ports processes
-
-  # Warmup turn through the GATEWAY (not `--local`). The gateway is
-  # already loaded — turns finish in ~10–12s. Switching to `--local`
-  # for warmup, as we did before, took 60–180s on openclaw 2026.4.24+
-  # because every `agent --local` invocation re-spawns node and
-  # re-loads ALL 76 plugins from disk. Through the gateway, plugins
-  # are loaded once at gateway start and reused per turn.
-  #
-  # Block synchronously with a 60s deadline so install.sh exits only
-  # when chat is actually serviceable. If warmup somehow fails we
-  # warn but proceed — the user can retry; we shouldn't ever hang
-  # the installer indefinitely on a flaky openclaw.
-  echo "Warming up openclaw via gateway..."
-  WARMUP_LOG="${TMPDIR:-/tmp}/clawos-openclaw-warmup.log"
-  # v3.10.42 — bumped 60s → 180s. On bare machines (no Homebrew/Xcode/
-  # Node prior installed), the gateway's first run stages 9 npm runtime
-  # deps for plugins (playwright-core, @modelcontextprotocol/sdk,
-  # @homebridge/ciao, etc.) plus loads channels and sidecars. Local
-  # timing on a warm machine: gateway responds to /health in 40–44s.
-  # On Falon's bare macOS 15.7.4 install (Heroku 68C48322), the
-  # warmup never produced output before the 60s deadline, the warmup
-  # log was empty, and install.sh's diag_tail crashed under set -euo
-  # pipefail (separately fixed). 180s gives ~3× headroom and is still
-  # a reasonable wait for a one-time install step.
-  WARMUP_DEADLINE_SECONDS=180
-  (
-    PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
-    "$OPENCLAW_BIN" --profile margin-machines agent --agent main \
-      --session-id "mm-warmup-$$" \
-      --message "ping" \
-      --timeout 60 \
-      --json \
-      >"$WARMUP_LOG" 2>&1 </dev/null &
-  ) &
-
-  # Gateway responses end with `"summary": "completed"` at the top
-  # level when the turn finishes successfully. The older `--local`
-  # path emits `"finalAssistantVisibleText"` instead — match either
-  # so this works no matter which code path the warmup ends up on.
-  WARMUP_OK=0
-  for s in $(seq 1 "$WARMUP_DEADLINE_SECONDS"); do
-    if [ -s "$WARMUP_LOG" ] && grep -qE '"summary"[[:space:]]*:[[:space:]]*"completed"|"finalAssistantVisibleText"' "$WARMUP_LOG" 2>/dev/null; then
-      WARMUP_OK=1
-      echo "openclaw is ready after ${s}s."
-      break
-    fi
-    if grep -q 'PluginLoadFailureError\|Failed to start CLI' "$WARMUP_LOG" 2>/dev/null; then
-      echo "WARNING: openclaw plugin load reported failure. Tail of $WARMUP_LOG:" >&2
-      tail -20 "$WARMUP_LOG" >&2 || true
-      break
-    fi
-    sleep 1
-  done
-
-  if [ "$WARMUP_OK" != "1" ]; then
-    echo "WARNING: openclaw warmup did not finish within ${WARMUP_DEADLINE_SECONDS}s." >&2
-    echo "         The first chat may take longer than usual; check $WARMUP_LOG" >&2
-    # Failure path needs more diagnostics, including log tails, since
-    # we'll otherwise be diagnosing this from Heroku with nothing else.
-    emit_diag_checkpoint "warmup-failed" warmup-log gateway-log puma-log processes ports plugins net
-  else
-    emit_diag_checkpoint "warmup-ok" warmup-log turns
-  fi
+  # v3.10.47 — install.sh's own warmup REMOVED. It was redundant
+  # with the launcher's `warmupOpenclawGateway()` (LauncherModel.swift
+  # ~line 2520), and its 180s deadline was the dominant cost on
+  # otherwise-clean v3.10.46 installs (Heroku 90F42C7A succeeded in
+  # 3m 51s — about 180s of which was sitting in this warmup poll).
+  # The launcher's revive-on-final-check (v3.10.41) handles any
+  # remaining cold-gateway timing, and v3.10.48 pre-stages plugin
+  # runtime deps in the DMG so cold starts no longer pay the 60s
+  # npm-install-9-packages cost. Net effect: install.sh exits ~3
+  # minutes faster and the launcher takes over for the gateway-warm
+  # responsibility, which it was already doing anyway.
+  emit_diag_checkpoint "pre-handoff" plugins ports processes
+  echo "Gateway is online. Handing off warmup to launcher (skipping install.sh's redundant 180s warmup)."
 fi
 
 # End-to-end chat-health probe: this is the canonical "would the user's
