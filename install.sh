@@ -628,7 +628,12 @@ if [ -x "$OPENCLAW_BIN" ] && [ -d "$OPENCLAW_RUNTIME_BIN" ]; then
   # state pollutes our gateway. See LauncherModel.openclawProfile
   # for the full rationale.
   echo "Ensuring openclaw gateway is running..."
+  # v3.10.60 — disable bonjour LAN multicast advertising so the
+  # macOS Application Firewall doesn't prompt the user about the
+  # bundled 'node' binary accepting incoming connections on first
+  # run. We're local-only; we don't need cross-device discovery.
   PATH="$OPENCLAW_RUNTIME_BIN:$PATH" \
+    OPENCLAW_DISABLE_BONJOUR=1 \
     "$OPENCLAW_BIN" --profile margin-machines gateway start >/dev/null 2>&1 || true
   # Brief wait for the gateway to bind its port. 18789 is the default.
   for _ in 1 2 3 4 5 6 7 8 9 10; do
