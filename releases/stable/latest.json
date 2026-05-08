@@ -1,13 +1,13 @@
 {
-  "version": "v3.10.73",
+  "version": "v3.10.74",
   "tarball": {
-    "file": "clawos-v3.10.73.tar.gz",
-    "url": "https://github.com/breue/getclawos/releases/download/v3.10.73/clawos-v3.10.73.tar.gz",
-    "sha256": "0e0dbf1b749f5b776660b4d8f7cce441b297f6705434f3ee9eba19919a161b7b"
+    "file": "clawos-v3.10.74.tar.gz",
+    "url": "https://github.com/breue/getclawos/releases/download/v3.10.74/clawos-v3.10.74.tar.gz",
+    "sha256": "a54c0115e560b25b7003854382a17e534944a0910b90a0abc52d19782af2df17"
   },
   "macos": {
-    "dmg_file": "MarginMachines-v3.10.73.dmg",
-    "dmg_url": "https://github.com/breue/getclawos/releases/download/v3.10.73/MarginMachines-v3.10.73.dmg",
-    "dmg_sha256": "343587a901f61d8f418cb94b94090633ef374663cfbdeb90646477d908d78ace"
+    "dmg_file": "MarginMachines-v3.10.74.dmg",
+    "dmg_url": "https://github.com/breue/getclawos/releases/download/v3.10.74/MarginMachines-v3.10.74.dmg",
+    "dmg_sha256": "99d3976ead55597d6864fb25f10eae579e12102ab061444e598c0d9358ea18e1"
   }
 }
